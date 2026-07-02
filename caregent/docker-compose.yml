@@ -28,6 +28,7 @@ services:
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: "Asia/Seoul"
       AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
       _AIRFLOW_WWW_USER_USERNAME: airflow
       _AIRFLOW_WWW_USER_PASSWORD: airflow
@@ -35,12 +36,17 @@ services:
       CAREGENT_POSTGRES_DSN: "dbname=caregent user=caregent password=caregent host=postgres port=5432"
       CAREGENT_SAMPLE_JOBS_PATH: "/opt/airflow/project/data/sample_jobs.json"
       PYTHONPATH: "/opt/airflow/project/src"
+      TZ: "Asia/Seoul"
     ports:
       - "8080:8080"
     volumes:
+      - caregent-airflow-home:/opt/airflow
+      - caregent-airflow-logs:/opt/airflow/logs
       - ./airflow/dags:/opt/airflow/dags:ro
       - .:/opt/airflow/project:ro
     command: standalone
 
 volumes:
+  caregent-airflow-home:
+  caregent-airflow-logs:
   caregent-postgres-data:
