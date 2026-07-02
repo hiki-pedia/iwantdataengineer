@@ -1,0 +1,6 @@
+Host caregent-db
+    HostName your-server-2-ip-or-domain
+    User ubuntu
+    Port 22
+    IdentityFile /home/dnhs01/.ssh/your-server-2-key.pem
+

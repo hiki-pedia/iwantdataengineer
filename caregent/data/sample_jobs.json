@@ -1,0 +1,53 @@
+[
+  {
+    "company_name": "Hanbit Data",
+    "position": "Junior Data Engineer",
+    "category": "Data Engineer",
+    "industry": "IT Platform",
+    "location": "Seoul",
+    "deadline": "2026-07-31",
+    "url": "https://caregent.local/jobs/hanbit-data-junior-de",
+    "description": "Build ETL pipelines with Python, SQL, PostgreSQL, Docker, and Apache Airflow."
+  },
+  {
+    "company_name": "Mirae Semiconductor",
+    "position": "Data Platform Engineer",
+    "category": "Data Engineer",
+    "industry": "Semiconductor",
+    "location": "Gyeonggi",
+    "deadline": "2026-08-15",
+    "url": "https://caregent.local/jobs/mirae-semiconductor-platform",
+    "description": "Operate data pipelines for fab analytics using Python, Spark, AWS, Linux, and Kubernetes."
+  },
+  {
+    "company_name": "CloudBridge",
+    "position": "Backend Engineer",
+    "category": "Backend",
+    "industry": "IT Service",
+    "location": "Remote",
+    "deadline": "2026-07-20",
+    "url": "https://caregent.local/jobs/cloudbridge-backend",
+    "description": "Develop APIs using FastAPI, PostgreSQL, Docker, Git, and AWS."
+  },
+  {
+    "company_name": "DataWorks Korea",
+    "position": "ETL Pipeline Engineer",
+    "category": "Data Engineer",
+    "industry": "IT Platform",
+    "location": "Seoul",
+    "deadline": "2026-09-01",
+    "url": "https://caregent.local/jobs/dataworks-etl",
+    "description": "Design batch data workflows with Airflow, Kafka, Python, SQL, and Redshift."
+  },
+  {
+    "company_name": "Hanbit Data",
+    "position": "Junior Data Engineer",
+    "category": "Data Engineer",
+    "industry": "IT Platform",
+    "location": "Seoul",
+    "deadline": "2026-07-31",
+    "url": "https://caregent.local/jobs/hanbit-data-junior-de",
+    "description": "Duplicate row for idempotency practice. Build ETL pipelines with Python, SQL, PostgreSQL, Docker, and Apache Airflow."
+  }
+]
+

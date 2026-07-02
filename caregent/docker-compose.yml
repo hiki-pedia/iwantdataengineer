@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: caregent-postgres
+    environment:
+      POSTGRES_USER: caregent
+      POSTGRES_PASSWORD: caregent
+      POSTGRES_DB: caregent
+    ports:
+      - "5432:5432"
+    volumes:
+      - caregent-postgres-data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caregent -d caregent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airflow:
+    image: apache/airflow:2.9.3-python3.11
+    container_name: caregent-airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: "-r /opt/airflow/project/requirements.txt"
+      CAREGENT_POSTGRES_DSN: "dbname=caregent user=caregent password=caregent host=postgres port=5432"
+      CAREGENT_SAMPLE_JOBS_PATH: "/opt/airflow/project/data/sample_jobs.json"
+      PYTHONPATH: "/opt/airflow/project/src"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - .:/opt/airflow/project:ro
+    command: standalone
+
+volumes:
+  caregent-postgres-data:
+
