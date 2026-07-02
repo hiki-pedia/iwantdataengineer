@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: caregent-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: caregent
       POSTGRES_PASSWORD: caregent
@@ -20,6 +21,7 @@ services:
   airflow:
     image: apache/airflow:2.9.3-python3.11
     container_name: caregent-airflow
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,4 +44,3 @@ services:
 
 volumes:
   caregent-postgres-data:
-
