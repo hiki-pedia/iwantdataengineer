@@ -9,8 +9,9 @@ Learning goals:
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+import pendulum
 from airflow.decorators import dag, task
 
 from caregent_etl.database import load_transformed_payload, payload_to_json
@@ -22,7 +23,7 @@ from caregent_etl.transform import transform_jobs
     dag_id="daily_job_etl",
     description="Collect, normalize, load, and aggregate Caregent job postings.",
     schedule="0 15 * * *",
-    start_date=datetime(2026, 6, 1),
+    start_date=pendulum.datetime(2026, 6, 1, tz="Asia/Seoul"),
     catchup=False,
     default_args={
         "owner": "caregent",
@@ -51,4 +52,3 @@ def daily_job_etl():
 
 
 daily_job_etl()
-

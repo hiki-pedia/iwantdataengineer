@@ -43,7 +43,7 @@ Open Airflow:
 - Username: `airflow`
 - Password: `airflow`
 
-The DAG is named `daily_job_etl` and is scheduled for 15:00 every day.
+The DAG is named `daily_job_etl` and is scheduled for 15:00 every day in the `Asia/Seoul` timezone.
 
 ## Query PostgreSQL
 
@@ -70,4 +70,3 @@ PYTHONPATH=src pytest
 
 - [Learning roadmap](docs/learning-roadmap.md)
 - [v1 architecture](docs/v1-architecture.md)
-

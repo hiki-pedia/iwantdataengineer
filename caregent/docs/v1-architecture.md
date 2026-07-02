@@ -22,9 +22,15 @@ sample job source
 ## DAG
 
 - DAG id: `daily_job_etl`
-- Schedule: `0 15 * * *`
+- Schedule: `0 15 * * *` in `Asia/Seoul`
 - Catchup: `false`
 - Retry: 2 retries, 3 minute delay
+
+## Runtime Persistence
+
+- `caregent-postgres-data`: ETL target database data
+- `caregent-airflow-home`: Airflow metadata database and runtime state
+- `caregent-airflow-logs`: Airflow task logs
 
 ## Tables
 
@@ -36,4 +42,3 @@ sample job source
 ## Idempotency
 
 `jobs.source_id` is generated from the source URL. The loader upserts `jobs`, replaces skills for each loaded job, and refreshes `trend_data`. Running the same DAG repeatedly should not create duplicate jobs.
-
