@@ -1,0 +1,103 @@
+[
+  {
+    "symbol": "000660.KS",
+    "display_name": "SK hynix",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "Korean memory semiconductor core asset."
+  },
+  {
+    "symbol": "005930.KS",
+    "display_name": "Samsung Electronics",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "Korean semiconductor benchmark asset."
+  },
+  {
+    "symbol": "022100.KQ",
+    "display_name": "POSCO DX",
+    "market": "KR",
+    "exchange": "KOSDAQ",
+    "asset_type": "stock",
+    "group": "industrial_ai_dx",
+    "modeling_tier": "core",
+    "notes": "Korean industrial digital transformation asset."
+  },
+  {
+    "symbol": "005380.KS",
+    "display_name": "Hyundai Motor",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "automotive",
+    "modeling_tier": "core",
+    "notes": "Korean non-semiconductor comparison asset."
+  },
+  {
+    "symbol": "MU",
+    "display_name": "Micron Technology",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "US memory semiconductor core asset."
+  },
+  {
+    "symbol": "SNDK",
+    "display_name": "SanDisk",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "semiconductor_storage",
+    "modeling_tier": "core",
+    "notes": "US memory/storage comparison asset."
+  },
+  {
+    "symbol": "SOXL",
+    "display_name": "Direxion Daily Semiconductor Bull 3X ETF",
+    "market": "US",
+    "exchange": "NYSEARCA",
+    "asset_type": "leveraged_etf",
+    "group": "semiconductor",
+    "modeling_tier": "experimental",
+    "notes": "Leveraged ETF. Useful for collection and risk analysis; harder for long-horizon modeling."
+  },
+  {
+    "symbol": "NASA",
+    "display_name": "Tema Space Innovators ETF",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "etf",
+    "group": "space",
+    "modeling_tier": "experimental",
+    "notes": "Space economy ETF. ETF composition can make interpretation harder."
+  },
+  {
+    "symbol": "SPCX",
+    "display_name": "SpaceX",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "space",
+    "modeling_tier": "experimental",
+    "notes": "Newer asset with limited history; collect first, model later."
+  },
+  {
+    "symbol": "RAM",
+    "display_name": "Roundhill T-REX 2X Long DRAM Daily Target ETF",
+    "market": "US",
+    "exchange": "BATS",
+    "asset_type": "leveraged_etf",
+    "group": "semiconductor_memory",
+    "modeling_tier": "experimental",
+    "notes": "Newer leveraged DRAM ETF with limited history and daily reset behavior."
+  }
+]
+
