@@ -1,87 +1,343 @@
-# ChartMaster Product Specification
+# ChartMaster 기능 명세서
 
-## 1. Project Purpose
+## 1. 프로젝트 개요
 
-ChartMaster is an Electron desktop application backed by an automated MLOps pipeline. It tracks a curated universe of Korean and US stocks/ETFs, trains prediction models on market data, and shows model outputs and training history to the user.
+ChartMaster는 주요 한국/미국 주식과 ETF의 시장 데이터를 수집하고, 주기적으로 머신러닝 모델을 학습한 뒤, 예측 결과와 모델 운영 이력을 Electron 데스크톱 앱에서 확인하는 학습형 포트폴리오 프로젝트다.
 
-The product is intentionally learning-focused. The priority is to understand Airflow, AWS S3, SageMaker, model evaluation, and deployment automation.
+이 프로젝트의 목적은 투자 서비스를 완성하는 것이 아니라, 데이터 엔지니어링, MLOps, AI 활용 흐름을 실제로 설계하고 구현해 보는 것이다. v1의 핵심은 높은 예측 수익률이 아니라, 다음 흐름을 설명 가능하게 만드는 데 있다.
 
-## 2. Core Goals
+- 시장 데이터 수집
+- 원천 데이터와 가공 데이터 저장
+- 피처 엔지니어링
+- 주기적 모델 학습
+- 모델 평가
+- 조건부 배포
+- 뉴스/외부 요인 분석
+- AI 기반 결과 해석
+- 실행 이력 확인
 
-1. Collect daily market data for selected Korean and US assets.
-2. Store raw and processed data in a reproducible structure.
-3. Generate price, volume, turnover, volatility, and momentum features.
-4. Train models on a schedule or when enough new data accumulates.
-5. Evaluate models before deployment.
-6. Surface predictions, charts, and model metrics in an Electron desktop app.
+## 2. 프로젝트 목표
 
-## 3. Initial Asset Universe
+ChartMaster의 1차 목표는 “데이터가 들어오면 자동으로 처리되고, 모델이 학습되며, 결과와 해석을 앱에서 확인할 수 있는 구조”를 만드는 것이다.
 
-### Korea Market
+주요 목표는 다음과 같다.
 
-| Symbol | Name | Role |
+1. 선정한 종목의 일별 OHLCV 데이터를 수집한다.
+2. 원천 데이터와 가공 데이터를 재현 가능한 구조로 저장한다.
+3. 가격, 거래량, 거래대금, 변동성, 모멘텀 기반 피처를 만든다.
+4. Airflow를 사용해 ETL과 모델 학습 흐름을 자동화한다.
+5. SageMaker 또는 로컬 학습 환경에서 모델을 학습한다.
+6. 모델 성능을 기준선 모델과 비교한다.
+7. 통과한 모델만 배포 후보로 관리한다.
+8. 뉴스, 산업 리포트, 매크로 이벤트를 활용해 외부 요인을 분석한다.
+9. AI가 예측 결과와 외부 요인을 요약한 분석 리포트를 생성한다.
+10. Electron 앱에서 차트, 예측 결과, 모델 이력, 파이프라인 상태를 확인한다.
+
+## 3. 사용자와 사용 시나리오
+
+주 사용자는 프로젝트를 만드는 개발자 본인이다. 따라서 일반 투자자용 서비스보다 학습, 검증, 기록에 초점을 둔다.
+
+대표 사용 시나리오는 다음과 같다.
+
+1. 앱을 실행한다.
+2. 한국장과 미국장 종목 목록을 확인한다.
+3. 특정 종목의 가격/거래량 차트를 확인한다.
+4. 최근 생성된 피처와 예측 결과를 확인한다.
+5. 현재 사용 중인 모델 버전과 학습 날짜를 확인한다.
+6. Airflow DAG 실행 성공/실패 이력을 확인한다.
+7. 모델 성능이 이전 버전보다 좋아졌는지 확인한다.
+8. RAG 기반 외부 요인 요약과 AI 분석 리포트를 확인한다.
+
+## 4. 초기 자산 목록
+
+초기 자산은 데이터 양, 주제성, 학습 난이도를 고려해 한국장과 미국장을 함께 다룬다.
+
+### 한국장
+
+| Symbol | 이름 | 역할 |
 | --- | --- | --- |
-| `000660.KS` | SK hynix | Memory semiconductor core asset |
-| `005930.KS` | Samsung Electronics | Korean semiconductor benchmark |
-| `022100.KQ` | POSCO DX | Korean AI/industrial DX asset |
-| `005380.KS` | Hyundai Motor | Korean non-semiconductor comparison asset |
+| `000660.KS` | SK하이닉스 | 메모리 반도체 핵심 종목 |
+| `005930.KS` | 삼성전자 | 한국 반도체/대형주 기준 종목 |
+| `022100.KS` | 포스코DX | 산업 DX/AI 테마 비교 종목 |
+| `005380.KS` | 현대차 | 비반도체 대형 제조업 비교 종목 |
+| `005490.KS` | POSCO홀딩스 | 철강/소재 경기순환 대표 종목 |
+| `000810.KS` | 삼성화재 | 보험/금융 대표 종목 |
+| `066570.KS` | LG전자 | 전자/IT 경기순환 대표 종목 |
+| `034730.KS` | SK | 지주회사/그룹사 대표 종목 |
+| `030200.KS` | KT | 통신 대표 종목 |
+| `015760.KS` | 한국전력 | 공기업/유틸리티 대표 종목 |
+| `055550.KS` | 신한지주 | 금융지주 대표 종목 |
+| `105560.KS` | KB금융 | 금융지주 대표 종목 |
 
-### US Market
+### 미국장
 
-| Symbol | Name | Role |
+| Symbol | 이름 | 역할 |
 | --- | --- | --- |
-| `MU` | Micron | US memory semiconductor core asset |
-| `SNDK` | SanDisk | US memory/storage asset |
-| `SOXL` | Direxion Daily Semiconductor Bull 3X ETF | Leveraged semiconductor ETF |
-| `NASA` | Tema Space Innovators ETF | Space economy ETF |
-| `SPCX` | SpaceX | Space theme individual asset |
-| `RAM` | Roundhill T-REX 2X Long DRAM Daily Target ETF | Experimental leveraged DRAM ETF |
+| `MU` | Micron Technology | 미국 메모리 반도체 핵심 종목 |
+| `WDC` | Western Digital | 미국 스토리지/NAND 비교 종목 |
+| `SPY` | SPDR S&P 500 ETF Trust | S&P 500 추종 ETF |
+| `QQQ` | Invesco QQQ Trust | Nasdaq 100 추종 ETF |
+| `AAPL` | Apple | 기술/전자기기 대표 종목 |
+| `MSFT` | Microsoft | 소프트웨어/클라우드 대표 종목 |
+| `IBM` | International Business Machines | IT/기업용 솔루션 장기 데이터 종목 |
+| `KO` | Coca-Cola | 음료/필수소비재 대표 종목 |
+| `JPM` | JPMorgan Chase | 금융/은행 대표 종목 |
+| `XOM` | Exxon Mobil | 에너지/석유 대표 종목 |
+| `CAT` | Caterpillar | 건설/중장비 경기순환 대표 종목 |
+| `PG` | Procter & Gamble | 생활소비재 대표 종목 |
+| `SNDK` | SanDisk | 미국 스토리지/메모리 관련 종목 |
+| `SOXL` | Direxion Daily Semiconductor Bull 3X ETF | 반도체 3배 레버리지 ETF |
+| `NASA` | Tema Space Innovators ETF | 우주 산업 ETF |
+| `SPCX` | SpaceX 관련 자산 | 우주 테마 실험 자산 |
+| `RAM` | Roundhill T-REX 2X Long DRAM Daily Target ETF | DRAM 2배 레버리지 실험 ETF |
 
-## 4. Core vs Experimental Assets
+## 5. Core 자산과 Experimental 자산
 
-Core assets are used for the first model training and evaluation loop.
+v1에서는 모든 자산을 같은 수준으로 모델링하지 않는다. 데이터 기간이 충분하고 해석이 쉬운 종목부터 학습에 사용하고, 상장 이력이 짧거나 구조가 복잡한 자산은 먼저 수집과 시각화 대상으로 둔다.
+
+### Core 자산
+
+Core 자산은 첫 모델 학습과 평가 루프에 우선 사용한다.
 
 - `000660.KS`
 - `005930.KS`
-- `022100.KQ`
+- `022100.KS`
 - `005380.KS`
+- `005490.KS`
+- `000810.KS`
+- `066570.KS`
+- `034730.KS`
+- `030200.KS`
+- `015760.KS`
+- `055550.KS`
+- `105560.KS`
 - `MU`
-- `SNDK`
+- `WDC`
+- `SPY`
+- `QQQ`
+- `AAPL`
+- `MSFT`
+- `IBM`
+- `KO`
+- `JPM`
+- `XOM`
+- `CAT`
+- `PG`
 
-Experimental assets are collected and visualized first, but may be excluded from early model training if historical data is too short or the structure is too difficult to interpret.
+### Experimental 자산
+
+Experimental 자산은 데이터 수집과 차트 표시는 진행하되, 초기 모델 학습에서는 제외될 수 있다.
 
 - `SOXL`
 - `NASA`
 - `SPCX`
 - `RAM`
+- `SNDK`
 
-## 5. Prediction Scope
+## 6. 예측 범위
 
-The first model should not try to predict exact next-day closing price. The initial target is:
+v1 모델은 다음 날 종가를 정확히 맞히는 회귀 문제로 시작하지 않는다. 초기 목표는 해석과 검증이 쉬운 이진 분류 문제로 제한한다.
 
 ```text
-Will the asset's 5-trading-day forward return be positive?
+5거래일 뒤 수익률이 0보다 큰가?
 ```
 
-This keeps the first model interpretable and gives a clear classification metric.
+즉, 첫 모델의 예측 대상은 다음과 같다.
 
-## 6. Electron Application
+```text
+target_positive_5d_return = future_5d_return > 0
+```
 
-The Electron app should show:
+## 7. 주요 기능
 
-- Asset list grouped by Korea/US and core/experimental
-- OHLCV chart
-- Latest features
-- Prediction result
-- Model version and training date
-- Evaluation metrics
-- Airflow/SageMaker run history summary
+### 7.1 자산 목록 조회
 
-## 7. Out of Scope for v1
+Electron 앱은 한국장/미국장, Core/Experimental 기준으로 자산을 구분해서 보여준다.
 
-- Real-money trading
-- Automated order execution
-- Portfolio allocation advice
-- High-frequency or intraday prediction
-- Investment recommendation claims
+필수 표시 항목은 다음과 같다.
 
+- 종목 코드
+- 종목명
+- 시장
+- 거래소
+- 자산 유형
+- 모델링 등급
+
+### 7.2 시장 데이터 차트 조회
+
+사용자는 특정 종목을 선택해 일별 가격과 거래량을 확인할 수 있다.
+
+v1 차트의 최소 범위는 다음과 같다.
+
+- 종가 라인 차트
+- 거래량 막대 차트
+- 기간 선택
+- 최근 데이터 갱신일 표시
+
+### 7.3 피처 조회
+
+앱은 모델 학습에 사용된 주요 피처를 확인할 수 있게 한다.
+
+예시 피처는 다음과 같다.
+
+- 1일 수익률
+- 5일 수익률
+- 20일 수익률
+- 5일 이동평균
+- 20일 이동평균
+- 5일 변동성
+- 20일 변동성
+- 거래량 변화율
+- 거래대금
+
+### 7.4 예측 결과 조회
+
+사용자는 종목별 최신 예측 결과를 확인할 수 있다.
+
+필수 표시 항목은 다음과 같다.
+
+- 예측 기준일
+- 예측 대상 기간
+- 상승/하락 분류 결과
+- 예측 확률
+- 사용 모델 버전
+- 모델 학습일
+
+### 7.5 모델 성능 조회
+
+앱은 모델이 실제로 개선되고 있는지 확인할 수 있도록 평가 지표를 보여준다.
+
+v1 평가 지표는 다음과 같다.
+
+- Accuracy
+- Precision
+- Recall
+- F1-score
+- ROC-AUC
+- 기준선 모델 대비 성능
+
+### 7.6 파이프라인 실행 이력 조회
+
+Airflow와 연동된 실행 이력을 앱에서 요약해서 보여준다.
+
+필수 표시 항목은 다음과 같다.
+
+- 마지막 데이터 수집 시간
+- 마지막 피처 생성 시간
+- 마지막 모델 학습 시간
+- 마지막 평가 결과
+- 실패한 DAG 또는 Task
+
+### 7.7 외부 요인 분석
+
+ChartMaster는 가격 데이터만으로 모든 변동을 설명하려 하지 않는다. 뉴스, 산업 리포트, 매크로 이벤트를 수집하고 AI를 활용해 종목별 외부 요인을 정리한다.
+
+v1 이후 다룰 외부 요인 후보는 다음과 같다.
+
+- 종목 관련 뉴스
+- 반도체/자동차/우주 산업 뉴스
+- 금리, 환율, 물가, FOMC 등 매크로 이벤트
+- 경쟁사 이슈
+- 실적 발표와 가이던스
+
+외부 요인 분석 결과는 직접적인 매수/매도 판단이 아니라, 모델 예측을 해석하기 위한 보조 정보로 사용한다.
+
+### 7.8 RAG 기반 근거 요약
+
+RAG는 수집한 뉴스와 문서에서 관련 근거를 찾아 요약하는 기능으로 사용한다.
+
+예시 질문은 다음과 같다.
+
+- “최근 SK하이닉스에 영향을 줄 만한 이슈는 무엇인가?”
+- “이번 주 반도체 섹터의 긍정/부정 요인은 무엇인가?”
+- “모델은 상승으로 예측했는데, 외부 뉴스도 같은 방향인가?”
+
+RAG 응답에는 가능한 한 원문 출처, 문서 날짜, 요약 근거를 함께 남긴다.
+
+### 7.9 감성 분석과 이벤트 분류
+
+뉴스 텍스트는 단순 요약에만 쓰지 않고 모델 피처로 변환할 수 있다.
+
+확장 후보는 다음과 같다.
+
+- 뉴스 감성 점수
+- 종목별 긍정/부정/중립 비율
+- 산업별 리스크 점수
+- 이벤트 유형 분류
+  - 실적
+  - 규제
+  - 공급망
+  - 금리/환율
+  - 신제품
+  - 경쟁사 이슈
+
+이 값들은 이후 가격 기반 피처와 결합해 멀티모달 예측 모델의 입력으로 사용할 수 있다.
+
+### 7.10 딥러닝 시계열 모델
+
+딥러닝은 기본 머신러닝 모델이 안정된 뒤 비교 실험으로 추가한다.
+
+초기 실험 방향은 다음과 같다.
+
+```text
+최근 60거래일 가격/거래량/피처
+  -> LSTM 또는 Transformer
+  -> 5거래일 뒤 상승 여부 예측
+```
+
+딥러닝은 “더 복잡하니까 더 좋다”가 아니라, 기존 ML 모델과 비교하면서 시계열 모델링과 MLOps 실험 범위를 넓히는 용도로 사용한다.
+
+### 7.11 AI 분석 리포트 생성
+
+AI 리포트는 사용자가 모델 결과를 이해할 수 있도록 요약 문장을 생성한다.
+
+리포트에는 다음 내용이 포함될 수 있다.
+
+- 오늘의 시장 요약
+- 종목별 예측 결과 설명
+- 예측에 영향을 준 주요 피처
+- 관련 뉴스와 외부 요인
+- 모델 신뢰도와 주의 사항
+
+단, 리포트는 투자 추천 문구를 포함하지 않는다.
+
+## 8. AI/ML 기능 우선순위
+
+AI 기능은 한 번에 모두 구현하지 않고 단계적으로 붙인다.
+
+| 우선순위 | 기능 | 목적 |
+| --- | --- | --- |
+| 1 | 기본 ML 모델 | 가격/거래량 기반 상승/하락 예측 기준선 만들기 |
+| 2 | RAG 외부 요인 요약 | 뉴스/문서 기반으로 예측 결과 해석 보조 |
+| 3 | 감성 분석 | 텍스트를 수치 피처로 변환 |
+| 4 | 딥러닝 시계열 모델 | LSTM/Transformer 계열 모델과 기존 ML 모델 비교 |
+| 5 | AI 리포트 생성 | 앱에서 사람이 읽을 수 있는 분석 요약 제공 |
+
+## 9. v1 제외 범위
+
+v1에서 하지 않는 것은 명확히 제외한다.
+
+- 실제 투자 자문
+- 매수/매도 추천
+- 자동 주문
+- 실거래 연동
+- 포트폴리오 비중 추천
+- 초단타 또는 분 단위 예측
+- 예측 수익률을 보장하는 표현
+- AI가 투자 결정을 대신하는 구조
+
+ChartMaster는 투자 앱이 아니라 데이터 엔지니어링과 MLOps 학습을 증명하는 프로젝트다.
+
+## 10. 성공 기준
+
+v1은 다음 조건을 만족하면 성공으로 본다.
+
+1. Airflow DAG가 정해진 스케줄에 따라 실행된다.
+2. 선정 자산의 OHLCV 데이터가 수집된다.
+3. 원천 데이터와 가공 데이터가 분리 저장된다.
+4. 피처 테이블이 생성된다.
+5. 모델이 주기적으로 학습된다.
+6. 평가 지표가 저장된다.
+7. 기준선 모델과 비교할 수 있다.
+8. 외부 뉴스/문서 요약을 예측 결과와 함께 확인할 수 있다.
+9. Electron 앱에서 차트, 예측 결과, 모델 이력을 확인할 수 있다.
