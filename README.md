@@ -4,18 +4,18 @@ Home lab for data engineering, ETL, Airflow, AWS, and database systems.
 
 ## Projects
 
-### Caregent
+### ChartMaster
 
-Caregent is a learning-first data engineering portfolio project. The product idea is an AI Career Agent, but the first milestone focuses on proving the data engineering foundation:
+ChartMaster is a learning-first MLOps portfolio project. It uses a curated Korean/US stock and ETF universe to practice market-data ETL, feature engineering, scheduled model training, evaluation, and deployment.
 
 - Airflow DAG scheduling and retry behavior
-- Extract, transform, load workflow design
-- PostgreSQL schema design and idempotent loading
-- Skill frequency trend aggregation
-- Study notes that explain what was learned and how it was verified
+- Market data collection and S3 storage
+- Feature engineering for price, volume, turnover, momentum, and volatility
+- SageMaker training/evaluation/deployment flow
+- Electron desktop dashboard for charts and model results
 
 Start here:
 
-- [Caregent README](caregent/README.md)
-- [Learning roadmap](caregent/docs/learning-roadmap.md)
-- [v1 architecture](caregent/docs/v1-architecture.md)
+- [ChartMaster README](chartmaster/README.md)
+- [Learning roadmap](chartmaster/docs/learning-roadmap.md)
+- [Architecture](chartmaster/docs/architecture.md)

@@ -1,0 +1,292 @@
+[
+  {
+    "symbol": "000660.KS",
+    "display_name": "SK hynix",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "Korean memory semiconductor core asset."
+  },
+  {
+    "symbol": "005930.KS",
+    "display_name": "Samsung Electronics",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "Korean semiconductor benchmark asset."
+  },
+  {
+    "symbol": "022100.KS",
+    "display_name": "POSCO DX",
+    "market": "KR",
+    "exchange": "KOSDAQ",
+    "asset_type": "stock",
+    "group": "industrial_ai_dx",
+    "modeling_tier": "core",
+    "notes": "Korean industrial digital transformation asset."
+  },
+  {
+    "symbol": "005380.KS",
+    "display_name": "Hyundai Motor",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "automotive",
+    "modeling_tier": "core",
+    "notes": "Korean non-semiconductor comparison asset."
+  },
+  {
+    "symbol": "005490.KS",
+    "display_name": "POSCO Holdings",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "steel_materials",
+    "modeling_tier": "core",
+    "notes": "Korean steel and materials cycle representative asset."
+  },
+  {
+    "symbol": "000810.KS",
+    "display_name": "Samsung Fire & Marine Insurance",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "insurance_financials",
+    "modeling_tier": "core",
+    "notes": "Korean insurance and financial sector representative asset."
+  },
+  {
+    "symbol": "066570.KS",
+    "display_name": "LG Electronics",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "consumer_electronics_it",
+    "modeling_tier": "core",
+    "notes": "Korean electronics and IT cycle representative asset."
+  },
+  {
+    "symbol": "034730.KS",
+    "display_name": "SK Inc.",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "holding_company",
+    "modeling_tier": "core",
+    "notes": "Korean holding company and conglomerate comparison asset."
+  },
+  {
+    "symbol": "030200.KS",
+    "display_name": "KT",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "telecommunications",
+    "modeling_tier": "core",
+    "notes": "Korean telecommunications representative asset."
+  },
+  {
+    "symbol": "015760.KS",
+    "display_name": "Korea Electric Power",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "utilities_public",
+    "modeling_tier": "core",
+    "notes": "Korean public utility representative asset."
+  },
+  {
+    "symbol": "055550.KS",
+    "display_name": "Shinhan Financial Group",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "financial_holdings",
+    "modeling_tier": "core",
+    "notes": "Korean financial holding company representative asset."
+  },
+  {
+    "symbol": "105560.KS",
+    "display_name": "KB Financial Group",
+    "market": "KR",
+    "exchange": "KRX",
+    "asset_type": "stock",
+    "group": "financial_holdings",
+    "modeling_tier": "core",
+    "notes": "Korean financial holding company representative asset."
+  },
+  {
+    "symbol": "MU",
+    "display_name": "Micron Technology",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "semiconductor_memory",
+    "modeling_tier": "core",
+    "notes": "US memory semiconductor core asset."
+  },
+  {
+    "symbol": "WDC",
+    "display_name": "Western Digital",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "semiconductor_storage",
+    "modeling_tier": "core",
+    "notes": "US storage and NAND comparison asset with longer history than SanDisk."
+  },
+  {
+    "symbol": "SPY",
+    "display_name": "SPDR S&P 500 ETF Trust",
+    "market": "US",
+    "exchange": "NYSEARCA",
+    "asset_type": "etf",
+    "group": "broad_market_sp500",
+    "modeling_tier": "core",
+    "notes": "S&P 500 benchmark ETF for broad US market comparison."
+  },
+  {
+    "symbol": "QQQ",
+    "display_name": "Invesco QQQ Trust",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "etf",
+    "group": "broad_market_nasdaq100",
+    "modeling_tier": "core",
+    "notes": "Nasdaq-100 benchmark ETF for US growth and technology comparison."
+  },
+  {
+    "symbol": "AAPL",
+    "display_name": "Apple",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "consumer_technology",
+    "modeling_tier": "core",
+    "notes": "US technology and consumer electronics representative asset."
+  },
+  {
+    "symbol": "MSFT",
+    "display_name": "Microsoft",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "software_cloud",
+    "modeling_tier": "core",
+    "notes": "US software and cloud representative asset."
+  },
+  {
+    "symbol": "IBM",
+    "display_name": "International Business Machines",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "enterprise_it",
+    "modeling_tier": "core",
+    "notes": "Long-history US enterprise IT and business solutions asset."
+  },
+  {
+    "symbol": "KO",
+    "display_name": "Coca-Cola",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "consumer_staples_beverages",
+    "modeling_tier": "core",
+    "notes": "US beverage and consumer staples representative asset."
+  },
+  {
+    "symbol": "JPM",
+    "display_name": "JPMorgan Chase",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "financial_banking",
+    "modeling_tier": "core",
+    "notes": "US banking and financial sector representative asset."
+  },
+  {
+    "symbol": "XOM",
+    "display_name": "Exxon Mobil",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "energy_oil_gas",
+    "modeling_tier": "core",
+    "notes": "US energy and oil cycle representative asset."
+  },
+  {
+    "symbol": "CAT",
+    "display_name": "Caterpillar",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "industrial_machinery",
+    "modeling_tier": "core",
+    "notes": "US industrial machinery and construction cycle representative asset."
+  },
+  {
+    "symbol": "PG",
+    "display_name": "Procter & Gamble",
+    "market": "US",
+    "exchange": "NYSE",
+    "asset_type": "stock",
+    "group": "consumer_staples_household",
+    "modeling_tier": "core",
+    "notes": "US household and consumer staples representative asset."
+  },
+  {
+    "symbol": "SNDK",
+    "display_name": "SanDisk",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "semiconductor_storage",
+    "modeling_tier": "experimental",
+    "notes": "Recently listed SanDisk asset with limited history; useful for data collection but weak for long-horizon modeling."
+  },
+  {
+    "symbol": "SOXL",
+    "display_name": "Direxion Daily Semiconductor Bull 3X ETF",
+    "market": "US",
+    "exchange": "NYSEARCA",
+    "asset_type": "leveraged_etf",
+    "group": "semiconductor",
+    "modeling_tier": "experimental",
+    "notes": "Leveraged ETF. Useful for collection and risk analysis; harder for long-horizon modeling."
+  },
+  {
+    "symbol": "NASA",
+    "display_name": "Tema Space Innovators ETF",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "etf",
+    "group": "space",
+    "modeling_tier": "experimental",
+    "notes": "Space economy ETF. ETF composition can make interpretation harder."
+  },
+  {
+    "symbol": "SPCX",
+    "display_name": "SpaceX",
+    "market": "US",
+    "exchange": "NASDAQ",
+    "asset_type": "stock",
+    "group": "space",
+    "modeling_tier": "experimental",
+    "notes": "Newer asset with limited history; collect first, model later."
+  },
+  {
+    "symbol": "RAM",
+    "display_name": "Roundhill T-REX 2X Long DRAM Daily Target ETF",
+    "market": "US",
+    "exchange": "BATS",
+    "asset_type": "leveraged_etf",
+    "group": "semiconductor_memory",
+    "modeling_tier": "experimental",
+    "notes": "Newer leveraged DRAM ETF with limited history and daily reset behavior."
+  }
+]

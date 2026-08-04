@@ -1,0 +1,86 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/chartmaster/airflow/dags
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Seoul
+    AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: Asia/Seoul
+    PYTHONPATH: /opt/airflow/chartmaster/src
+  volumes:
+    - .:/opt/airflow/chartmaster
+    - ../.env:/opt/airflow/.env:ro
+    - /home/dnhs01/.ssh:/home/dnhs01/.ssh:ro
+    - ./airflow/logs:/opt/airflow/logs
+  user: "${AIRFLOW_UID:-1000}:0"
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  airflow-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        airflow db migrate
+        airflow users create \
+          --username "${AIRFLOW_ADMIN_USER:-chartmaster}" \
+          --firstname Chart \
+          --lastname Master \
+          --role Admin \
+          --email chartmaster@example.local \
+          --password "${AIRFLOW_ADMIN_PASSWORD:-chartmaster}" \
+          || true
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "${CHARTMASTER_AIRFLOW_PORT:-8081}:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+
+volumes:
+  airflow-postgres-db-volume:
