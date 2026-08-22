@@ -8,7 +8,8 @@ Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 �
 - 2026-08-22에 확인한 Server 2 품질 결과를 Mock 스냅샷으로 표시
 - 차트 시계열은 `DEMO SERIES`로 명시
 - 차트 호버에서 날짜, OHLCV 표시
-- `5Y / 1Y / 6M / 1M / 5D` 기간 버튼과 휠 단계 전환
+- `ALL / 5Y / 1Y / 6M / 1M / 5D` 기간 버튼과 휠 단계 전환
+- 전체 이력을 유지한 상태에서 기간을 확대하고 과거 구간으로 이동
 - 모델이 없으므로 예측 확률을 생성하지 않고 `model_not_ready`로 표시
 - `VITE_CHARTMASTER_API_URL`이 있으면 API provider, 없으면 Mock provider 사용
 
