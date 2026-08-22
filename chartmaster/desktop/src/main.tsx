@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   AlertTriangle,
@@ -13,202 +13,66 @@ import {
   Workflow,
   X
 } from "lucide-react";
+import type { Asset, DashboardSnapshot, Prediction, StockCandle } from "./data/contracts";
+import { dataProvider } from "./data/provider";
 import "./styles.css";
 
-type AppRoute = `asset:${string}` | "data-status" | "data-check" | "events" | "predictions" | "pipelines" | "reports";
-
-type Asset = {
-  symbol: string;
-  name: string;
-  market: "KR" | "US";
-  exchange: string;
-  tier: "core" | "experimental";
-  latestClose: number;
-  return1d: number;
-  volume: number;
-  rowCount: number;
-  startDate: string;
-  endDate: string;
-  dataStatus: "ready" | "watch" | "planned";
-};
-
-type StockCandle = {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  ma5: number;
-  ma20: number;
-};
-
-const assets: Asset[] = [
-  {
-    symbol: "000660.KS",
-    name: "SK하이닉스",
-    market: "KR",
-    exchange: "KRX",
-    tier: "core",
-    latestClose: 198500,
-    return1d: 0.042,
-    volume: 3600000,
-    rowCount: 6631,
-    startDate: "2000-01-04",
-    endDate: "2026-08-21",
-    dataStatus: "ready"
-  },
-  {
-    symbol: "005930.KS",
-    name: "삼성전자",
-    market: "KR",
-    exchange: "KRX",
-    tier: "core",
-    latestClose: 75400,
-    return1d: 0.018,
-    volume: 12400000,
-    rowCount: 6628,
-    startDate: "2000-01-04",
-    endDate: "2026-08-21",
-    dataStatus: "ready"
-  },
-  {
-    symbol: "MU",
-    name: "마이크론 테크놀로지",
-    market: "US",
-    exchange: "NASDAQ",
-    tier: "core",
-    latestClose: 132.4,
-    return1d: 0.031,
-    volume: 17800000,
-    rowCount: 6684,
-    startDate: "2000-01-03",
-    endDate: "2026-08-21",
-    dataStatus: "ready"
-  },
-  {
-    symbol: "AAPL",
-    name: "애플",
-    market: "US",
-    exchange: "NASDAQ",
-    tier: "core",
-    latestClose: 214.1,
-    return1d: -0.012,
-    volume: 52200000,
-    rowCount: 6690,
-    startDate: "2000-01-03",
-    endDate: "2026-08-21",
-    dataStatus: "ready"
-  },
-  {
-    symbol: "SOXL",
-    name: "미국 반도체 3배 레버리지 ETF",
-    market: "US",
-    exchange: "NYSEARCA",
-    tier: "experimental",
-    latestClose: 51.2,
-    return1d: -0.064,
-    volume: 45100000,
-    rowCount: 4012,
-    startDate: "2010-03-11",
-    endDate: "2026-08-21",
-    dataStatus: "watch"
-  }
-];
-
-const dataChecks = [
-  { name: "원천 OHLCV 파일", scope: "market_data", status: "pass", detail: "최신 파일 확인" },
-  { name: "필수 컬럼", scope: "open high low close volume", status: "pass", detail: "스키마 계약 일치" },
-  { name: "중복 날짜", scope: "date index", status: "pass", detail: "중복 row 0개" },
-  { name: "피처 결측률", scope: "processed/features", status: "watch", detail: "이동 윈도우 초반 결측은 정상 범위" },
-  { name: "미국장 최신 종가", scope: "daily_us_market_data_etl", status: "queued", detail: "다음 장마감 수집 대기" }
-] as const;
-
-const pipelineRuns = [
-  { name: "daily_kr_market_data_etl", status: "success", lastRun: "2026-08-21 16:12", nextRun: "2026-08-24 16:10", rows: 120 },
-  { name: "daily_us_market_data_etl", status: "queued", lastRun: "2026-08-21 17:33", nextRun: "2026-08-24 17:30", rows: 170 },
-  { name: "weekly_model_training", status: "planned", lastRun: "-", nextRun: "Phase 7", rows: 0 }
-];
-
-const events = [
-  { symbol: "000660.KS", type: "급등", date: "2026-08-19", move: 0.064, cause: "메모리 업황 강세" },
-  { symbol: "AAPL", type: "급락", date: "2026-08-18", move: -0.047, cause: "기술주 위험 회피" },
-  { symbol: "SOXL", type: "변동성 확대", date: "2026-08-20", move: -0.082, cause: "레버리지 ETF 증폭 효과" }
-];
-
-const reports = [
-  { title: "시장 요약 스냅샷", symbol: "ALL", date: "2026-08-21", status: "ready" },
-  { title: "SK하이닉스 외부 요인", symbol: "000660.KS", date: "2026-08-21", status: "ready" },
-  { title: "기준선 모델 상태", symbol: "ALL", date: "Phase 6", status: "planned" }
-];
-
-const tradingDates = (count: number) => {
-  const dates: string[] = [];
-  const cursor = new Date("2026-08-21T00:00:00Z");
-  while (dates.length < count) {
-    const day = cursor.getUTCDay();
-    if (day !== 0 && day !== 6) {
-      dates.unshift(cursor.toISOString().slice(5, 10));
-    }
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  return dates;
-};
-
-const seedFor = (symbol: string) => [...symbol].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-
-const movingAverage = (values: number[], index: number, window: number) => {
-  const start = Math.max(0, index - window + 1);
-  const slice = values.slice(start, index + 1);
-  return slice.reduce((sum, value) => sum + value, 0) / slice.length;
-};
-
-const buildCandles = (asset: Asset, count = 96): StockCandle[] => {
-  const seed = seedFor(asset.symbol);
-  const closes: number[] = [];
-  const dates = tradingDates(count);
-  const priceScale = asset.latestClose;
-  return dates.map((date, index) => {
-    const progress = index / Math.max(1, count - 1);
-    const trend = priceScale * (0.84 + progress * 0.18);
-    const cycle = Math.sin(index / 4.4 + seed) * priceScale * 0.035 + Math.cos(index / 10 + seed) * priceScale * 0.024;
-    const close = Math.max(priceScale * 0.35, trend + cycle);
-    const previous = closes[index - 1] ?? close * (0.992 + Math.sin(seed) * 0.008);
-    const open = previous + Math.sin(index / 2.7 + seed) * priceScale * 0.012;
-    const high = Math.max(open, close) + priceScale * (0.01 + Math.abs(Math.sin(index / 3.1 + seed)) * 0.025);
-    const low = Math.min(open, close) - priceScale * (0.01 + Math.abs(Math.cos(index / 2.8 + seed)) * 0.022);
-    const volume = Math.round(asset.volume * (0.45 + Math.abs(Math.sin(index / 5 + seed)) * 0.9 + Math.abs(close - open) / priceScale));
-    closes.push(close);
-    return {
-      date,
-      open,
-      high,
-      low,
-      close,
-      volume,
-      ma5: movingAverage(closes, index, 5),
-      ma20: movingAverage(closes, index, 20)
-    };
-  });
-};
+type AppRoute = `asset:${string}` | "dashboard" | "assets" | "data-status" | "data-check" | "events" | "predictions" | "pipelines" | "reports";
 
 function App() {
-  const [route, setRoute] = useState<AppRoute>(`asset:${assets[0].symbol}`);
+  const [route, setRoute] = useState<AppRoute>("dashboard");
   const [isExpanded, setIsExpanded] = useState(false);
-  const selectedSymbol = route.startsWith("asset:") ? route.slice("asset:".length) : assets[0].symbol;
-  const selectedAsset = assets.find((asset) => asset.symbol === selectedSymbol) ?? assets[0];
+  const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    dataProvider.loadSnapshot().then(setSnapshot).catch((reason: unknown) => {
+      setError(reason instanceof Error ? reason.message : "데이터를 불러오지 못했습니다.");
+    });
+  }, []);
+
+  useEffect(() => {
+    document.querySelector("main")?.scrollTo({ top: 0, left: 0 });
+    setIsExpanded(false);
+  }, [route]);
+
+  if (error) {
+    return <SystemState title="데이터 연결 실패" detail={error} />;
+  }
+  if (!snapshot) {
+    return <SystemState title="데이터 불러오는 중" detail="Dashboard provider 응답을 기다리고 있습니다." />;
+  }
+
+  const selectedSymbol = route.startsWith("asset:") ? route.slice("asset:".length) : snapshot.assets[0].symbol;
+  const selectedAsset = snapshot.assets.find((asset) => asset.symbol === selectedSymbol) ?? snapshot.assets[0];
+  const selectedPrediction = snapshot.predictions.find((prediction) => prediction.symbol === selectedAsset.symbol);
 
   return (
     <div className="shell">
       <Sidebar route={route} setRoute={setRoute} />
       <main>
-        {route.startsWith("asset:") && <AssetPage asset={selectedAsset} isExpanded={isExpanded} setIsExpanded={setIsExpanded} />}
-        {route === "data-status" && <DataStatusPage />}
-        {route === "data-check" && <DataCheckPage />}
-        {route === "events" && <EventsPage setRoute={setRoute} />}
-        {route === "predictions" && <PredictionsPage setRoute={setRoute} />}
-        {route === "pipelines" && <PipelinesPage />}
-        {route === "reports" && <ReportsPage />}
+        <div className={`source-banner ${snapshot.sourceMode}`}>
+          <strong>{snapshot.sourceMode === "api" ? "LIVE API" : "MOCK SNAPSHOT"}</strong>
+          <span>{snapshot.sourceLabel}</span>
+          <time>{formatDateTime(snapshot.generatedAt)}</time>
+        </div>
+        {route === "dashboard" && <DashboardPage snapshot={snapshot} setRoute={setRoute} />}
+        {route === "assets" && <AssetsPage assets={snapshot.assets} setRoute={setRoute} />}
+        {route.startsWith("asset:") && (
+          <AssetPage
+            asset={selectedAsset}
+            prediction={selectedPrediction}
+            sourceMode={snapshot.sourceMode}
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+          />
+        )}
+        {route === "data-status" && <DataStatusPage assets={snapshot.assets} />}
+        {route === "data-check" && <DataCheckPage checks={snapshot.dataChecks} />}
+        {route === "events" && <EventsPage events={snapshot.events} setRoute={setRoute} />}
+        {route === "predictions" && <PredictionsPage predictions={snapshot.predictions} setRoute={setRoute} />}
+        {route === "pipelines" && <PipelinesPage runs={snapshot.pipelineRuns} />}
+        {route === "reports" && <ReportsPage reports={snapshot.reports} />}
       </main>
     </div>
   );
@@ -222,20 +86,9 @@ function Sidebar({ route, setRoute }: { route: AppRoute; setRoute: (route: AppRo
         <strong>ChartMaster</strong>
       </div>
 
-      <NavSection title="대시보드">
-        {assets.map((asset) => (
-          <button
-            className={route === `asset:${asset.symbol}` ? "active nested" : "nested"}
-            key={asset.symbol}
-            onClick={() => setRoute(`asset:${asset.symbol}`)}
-          >
-            <LineChart size={16} />
-            <span>
-              <strong>{asset.symbol}</strong>
-              <small>{asset.name}</small>
-            </span>
-          </button>
-        ))}
+      <NavSection title="시장">
+        <NavButton active={route === "dashboard"} icon={<BarChart3 size={16} />} label="대시보드" onClick={() => setRoute("dashboard")} />
+        <NavButton active={route === "assets" || route.startsWith("asset:")} icon={<LineChart size={16} />} label="종목" onClick={() => setRoute("assets")} />
       </NavSection>
 
       <NavSection title="데이터">
@@ -265,6 +118,16 @@ function Sidebar({ route, setRoute }: { route: AppRoute; setRoute: (route: AppRo
   );
 }
 
+function SystemState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="system-state">
+      <Database size={28} />
+      <strong>{title}</strong>
+      <span>{detail}</span>
+    </div>
+  );
+}
+
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="nav-section">
@@ -283,11 +146,88 @@ function NavButton({ active, icon, label, onClick }: { active: boolean; icon: Re
   );
 }
 
-function AssetPage({ asset, isExpanded, setIsExpanded }: { asset: Asset; isExpanded: boolean; setIsExpanded: (value: boolean) => void }) {
-  const candles = useMemo(() => buildCandles(asset), [asset]);
-  const last = candles[candles.length - 1];
-  const prev = candles[candles.length - 2] ?? last;
-  const change = last.close / prev.close - 1;
+function DashboardPage({ snapshot, setRoute }: { snapshot: DashboardSnapshot; setRoute: (route: AppRoute) => void }) {
+  const krCount = snapshot.assets.filter((asset) => asset.market === "KR").length;
+  const warningCount = snapshot.assets.filter((asset) => asset.dataStatus === "watch").length;
+  const movers = [...snapshot.assets].sort((left, right) => Math.abs(right.return1d ?? 0) - Math.abs(left.return1d ?? 0)).slice(0, 6);
+  return (
+    <Page title="대시보드" icon={<BarChart3 />}>
+      <section className="quote-strip summary-strip">
+        <Quote label="전체 자산" value={snapshot.assets.length.toString()} />
+        <Quote label="한국 / 미국" value={`${krCount} / ${snapshot.assets.length - krCount}`} />
+        <Quote label="품질 관찰" value={`${warningCount}종목`} tone={warningCount ? "watch" : "up"} />
+        <Quote label="예측 모델" value="미준비" />
+      </section>
+      <section className="dashboard-band">
+        <div className="section-heading"><h2>주요 변동</h2><span>최근 스냅샷 기준</span></div>
+        <div className="asset-table">
+          {movers.map((asset) => (
+            <button key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
+              <strong>{asset.symbol}</strong><span>{asset.name}</span>
+              <em className={(asset.return1d ?? 0) >= 0 ? "up" : "down"}>{formatNullablePercent(asset.return1d)}</em>
+              <small>{statusText(asset.dataStatus)}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+    </Page>
+  );
+}
+
+function AssetsPage({ assets, setRoute }: { assets: Asset[]; setRoute: (route: AppRoute) => void }) {
+  const [query, setQuery] = useState("");
+  const [market, setMarket] = useState<"ALL" | "KR" | "US">("ALL");
+  const filtered = assets.filter((asset) => {
+    const matchesMarket = market === "ALL" || asset.market === market;
+    const needle = query.trim().toLowerCase();
+    return matchesMarket && (!needle || asset.symbol.toLowerCase().includes(needle) || asset.name.toLowerCase().includes(needle));
+  });
+  return (
+    <Page title="종목" icon={<LineChart />}>
+      <div className="asset-toolbar">
+        <div className="segmented-control">
+          {(["ALL", "KR", "US"] as const).map((value) => (
+            <button className={market === value ? "active" : ""} key={value} onClick={() => setMarket(value)}>{value}</button>
+          ))}
+        </div>
+        <input aria-label="종목 검색" placeholder="티커 또는 종목명 검색" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </div>
+      <div className="asset-table asset-directory">
+        {filtered.map((asset) => (
+          <button key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
+            <strong>{asset.symbol}</strong><span>{asset.name}</span><span>{asset.market} · {asset.assetType}</span>
+            <em className={(asset.return1d ?? 0) >= 0 ? "up" : "down"}>{formatNullablePercent(asset.return1d)}</em>
+            <small className={asset.dataStatus}>{statusText(asset.dataStatus)}</small>
+          </button>
+        ))}
+      </div>
+    </Page>
+  );
+}
+
+function AssetPage({
+  asset,
+  prediction,
+  sourceMode,
+  isExpanded,
+  setIsExpanded
+}: {
+  asset: Asset;
+  prediction?: Prediction;
+  sourceMode: DashboardSnapshot["sourceMode"];
+  isExpanded: boolean;
+  setIsExpanded: (value: boolean) => void;
+}) {
+  const [candles, setCandles] = useState<StockCandle[]>([]);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCandles([]);
+    setPriceError(null);
+    dataProvider.loadPrices(asset.symbol, "6M").then(setCandles).catch((reason: unknown) => {
+      setPriceError(reason instanceof Error ? reason.message : "가격 데이터를 불러오지 못했습니다.");
+    });
+  }, [asset.symbol]);
 
   return (
     <section className="asset-page">
@@ -305,34 +245,37 @@ function AssetPage({ asset, isExpanded, setIsExpanded }: { asset: Asset; isExpan
       </header>
 
       <section className="quote-strip">
-        <Quote label="종가" value={formatPrice(last.close, asset)} />
-        <Quote label="1D" value={formatPercent(change)} tone={change >= 0 ? "up" : "down"} />
-        <Quote label="거래량" value={formatCompact(last.volume)} />
+        <Quote label="종가" value={formatNullablePrice(asset.latestClose, asset)} />
+        <Quote label="1D" value={formatNullablePercent(asset.return1d)} tone={(asset.return1d ?? 0) >= 0 ? "up" : "down"} />
+        <Quote label="거래량" value={formatNullableCompact(asset.volume)} />
         <Quote label="데이터 기간" value={`${asset.startDate} - ${asset.endDate}`} />
       </section>
 
       <section className="asset-layout">
         <div className="chart-panel">
-          <StockChart candles={candles} asset={asset} onExpand={() => setIsExpanded(true)} />
+          {priceError && <SystemState title="가격 데이터 오류" detail={priceError} />}
+          {!priceError && candles.length === 0 && <SystemState title="차트 불러오는 중" detail={asset.symbol} />}
+          {candles.length > 0 && <StockChart candles={candles} asset={asset} isDemo={sourceMode === "mock"} onExpand={() => setIsExpanded(true)} />}
         </div>
         <aside className="inspector">
           <h2>데이터</h2>
           <InfoRow label="행 수" value={asset.rowCount.toLocaleString()} />
           <InfoRow label="최신 일자" value={asset.endDate} />
-          <InfoRow label="OHLCV" value="정상" tone="ready" />
-          <InfoRow label="피처" value="정상" tone="ready" />
+          <InfoRow label="품질" value={asset.warningCount ? `경고 ${asset.warningCount}` : "통과"} tone={asset.warningCount ? "watch" : "ready"} />
+          <InfoRow label="표시 소스" value={sourceMode === "mock" ? "스냅샷 / 데모" : "Live API"} />
           <InfoRow label="등급" value={tierText(asset.tier)} />
-          <h2>신호</h2>
-          <InfoRow label="예측 기간" value="5D" />
-          <InfoRow label="모델" value="기준선 자리" />
-          <InfoRow label="신뢰도" value={asset.tier === "core" ? "중간" : "낮음"} tone={asset.tier === "core" ? "ready" : "watch"} />
+          <h2>예측</h2>
+          <InfoRow label="예측 기간" value={`${prediction?.horizonTradingDays ?? 5} 거래일`} />
+          <InfoRow label="상태" value={predictionStatusText(prediction?.status)} tone={prediction?.status === "ready" ? "ready" : "watch"} />
+          <InfoRow label="상승 확률" value={formatProbability(prediction?.upProbability)} />
+          <InfoRow label="모델" value={prediction?.modelVersion ?? "-"} />
         </aside>
       </section>
 
       {isExpanded && (
         <div className="chart-overlay">
           <div className="chart-modal">
-            <StockChart candles={candles} asset={asset} expanded onClose={() => setIsExpanded(false)} />
+            <StockChart candles={candles} asset={asset} isDemo={sourceMode === "mock"} expanded onClose={() => setIsExpanded(false)} />
           </div>
         </div>
       )}
@@ -340,7 +283,7 @@ function AssetPage({ asset, isExpanded, setIsExpanded }: { asset: Asset; isExpan
   );
 }
 
-function DataStatusPage() {
+function DataStatusPage({ assets }: { assets: Asset[] }) {
   return (
     <Page title="데이터 상태" icon={<Database />}>
       <section className="status-grid">
@@ -353,7 +296,7 @@ function DataStatusPage() {
             <em className={asset.dataStatus}>{statusText(asset.dataStatus)}</em>
             <InfoRow label="원천 행 수" value={asset.rowCount.toLocaleString()} />
             <InfoRow label="최신 일자" value={asset.endDate} />
-            <InfoRow label="거래량" value={formatCompact(asset.volume)} />
+            <InfoRow label="품질 경고" value={asset.warningCount.toString()} tone={asset.warningCount ? "watch" : "ready"} />
           </article>
         ))}
       </section>
@@ -361,11 +304,11 @@ function DataStatusPage() {
   );
 }
 
-function DataCheckPage() {
+function DataCheckPage({ checks }: { checks: DashboardSnapshot["dataChecks"] }) {
   return (
     <Page title="데이터 검증" icon={<SearchCheck />}>
       <section className="panel-list">
-        {dataChecks.map((check) => (
+        {checks.map((check) => (
           <article className="check-row" key={check.name}>
             <CheckCircle2 className={check.status} />
             <div>
@@ -381,7 +324,7 @@ function DataCheckPage() {
   );
 }
 
-function EventsPage({ setRoute }: { setRoute: (route: AppRoute) => void }) {
+function EventsPage({ events, setRoute }: { events: DashboardSnapshot["events"]; setRoute: (route: AppRoute) => void }) {
   return (
     <Page title="이벤트" icon={<AlertTriangle />}>
       <section className="panel-list">
@@ -391,7 +334,7 @@ function EventsPage({ setRoute }: { setRoute: (route: AppRoute) => void }) {
             <span>{event.date}</span>
             <span>{event.type}</span>
             <em className={event.move >= 0 ? "up" : "down"}>{formatPercent(event.move)}</em>
-            <span>{event.cause}</span>
+            <span>{event.causeSummary ?? "외부 근거 분석 전"}</span>
           </button>
         ))}
       </section>
@@ -399,38 +342,35 @@ function EventsPage({ setRoute }: { setRoute: (route: AppRoute) => void }) {
   );
 }
 
-function PredictionsPage({ setRoute }: { setRoute: (route: AppRoute) => void }) {
+function PredictionsPage({ predictions, setRoute }: { predictions: Prediction[]; setRoute: (route: AppRoute) => void }) {
   return (
     <Page title="예측" icon={<Brain />}>
       <section className="panel-list">
-        {assets.map((asset, index) => {
-          const probability = 0.52 + Math.sin(seedFor(asset.symbol)) * 0.16;
-          return (
-            <button className="prediction-row" key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
-              <strong>{asset.symbol}</strong>
-              <span>5일 방향성</span>
-              <em className={probability >= 0.5 ? "up" : "down"}>{Math.round(probability * 100)}%</em>
-              <span>{index < 3 ? "기준선 자리" : "대기"}</span>
-            </button>
-          );
-        })}
+        {predictions.map((prediction) => (
+          <button className="prediction-row" key={prediction.symbol} onClick={() => setRoute(`asset:${prediction.symbol}`)}>
+            <strong>{prediction.symbol}</strong>
+            <span>{prediction.horizonTradingDays}거래일 상승 여부</span>
+            <em className={prediction.status === "ready" ? "up" : "watch"}>{formatProbability(prediction.upProbability)}</em>
+            <span>{predictionStatusText(prediction.status)}</span>
+          </button>
+        ))}
       </section>
     </Page>
   );
 }
 
-function PipelinesPage() {
+function PipelinesPage({ runs }: { runs: DashboardSnapshot["pipelineRuns"] }) {
   return (
     <Page title="파이프라인" icon={<Workflow />}>
       <section className="status-grid pipeline-grid">
-        {pipelineRuns.map((run) => (
+        {runs.map((run) => (
           <article className="status-card" key={run.name}>
             <div>
               <strong>{run.name}</strong>
-              <span>{run.lastRun}</span>
+              <span>{run.lastRun ?? "실행 이력 없음"}</span>
             </div>
             <em className={run.status}>{statusText(run.status)}</em>
-            <InfoRow label="다음 실행" value={run.nextRun} />
+            <InfoRow label="다음 실행" value={run.nextRun ?? "-"} />
             <InfoRow label="행 수" value={run.rows.toLocaleString()} />
           </article>
         ))}
@@ -439,7 +379,7 @@ function PipelinesPage() {
   );
 }
 
-function ReportsPage() {
+function ReportsPage({ reports }: { reports: DashboardSnapshot["reports"] }) {
   return (
     <Page title="리포트" icon={<FileText />}>
       <section className="panel-list">
@@ -448,7 +388,7 @@ function ReportsPage() {
             <FileText />
             <div>
               <strong>{report.title}</strong>
-              <span>{report.symbol} / {report.date}</span>
+              <span>{report.symbol} / {report.date ?? "생성 전"}</span>
             </div>
             <em className={report.status}>{statusText(report.status)}</em>
           </article>
@@ -473,12 +413,14 @@ function Page({ title, icon, children }: { title: string; icon: React.ReactNode;
 function StockChart({
   candles,
   asset,
+  isDemo,
   expanded,
   onExpand,
   onClose
 }: {
   candles: StockCandle[];
   asset: Asset;
+  isDemo?: boolean;
   expanded?: boolean;
   onExpand?: () => void;
   onClose?: () => void;
@@ -498,7 +440,7 @@ function StockChart({
   const maxPrice = Math.max(...candles.map((candle) => candle.high));
   const minPrice = Math.min(...candles.map((candle) => candle.low));
   const priceRange = maxPrice - minPrice || 1;
-  const maxVolume = Math.max(...candles.map((candle) => candle.volume));
+  const maxVolume = Math.max(...candles.map((candle) => candle.volume), 1);
   const step = plotWidth / candles.length;
   const candleWidth = Math.max(5, Math.min(12, step * 0.58));
   const priceY = (value: number) => top + ((maxPrice - value) / priceRange) * priceHeight;
@@ -513,7 +455,7 @@ function StockChart({
       <div className="stock-chart-header">
         <div>
           <h2>{asset.symbol}</h2>
-          <span>{asset.name}</span>
+          <span>{asset.name}{isDemo ? " · DEMO SERIES" : ""}</span>
         </div>
         <div className="chart-actions">
           <div className="ohlc-strip">
@@ -597,7 +539,7 @@ function StockChart({
   );
 }
 
-function Quote({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
+function Quote({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" | "watch" }) {
   return (
     <div className="quote">
       <span>{label}</span>
@@ -623,8 +565,39 @@ function formatCompact(value: number) {
   return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
+function formatNullableCompact(value: number | null) {
+  return value === null ? "-" : formatCompact(value);
+}
+
 function formatPrice(value: number, asset: Asset) {
   return asset.market === "KR" ? Math.round(value).toLocaleString("en-US") : value.toFixed(2);
+}
+
+function formatNullablePrice(value: number | null, asset: Asset) {
+  return value === null ? "-" : formatPrice(value, asset);
+}
+
+function formatNullablePercent(value: number | null) {
+  return value === null ? "-" : formatPercent(value);
+}
+
+function formatProbability(value: number | null | undefined) {
+  return value == null ? "제공 안 함" : `${(value * 100).toFixed(1)}%`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function predictionStatusText(status: Prediction["status"] | undefined) {
+  const labels: Record<Prediction["status"], string> = {
+    model_not_ready: "모델 미준비",
+    ready: "예측 생성 완료",
+    stale: "예측 갱신 필요",
+    failed: "예측 실패"
+  };
+  return status ? labels[status] : "예측 없음";
 }
 
 function tierText(tier: string) {
@@ -640,7 +613,10 @@ function statusText(status: string) {
     planned: "예정",
     pass: "통과",
     queued: "대기",
-    success: "성공"
+    success: "성공",
+    running: "실행 중",
+    failed: "실패",
+    unavailable: "사용 불가"
   };
   return labels[status] ?? status;
 }
