@@ -24,9 +24,10 @@ SESSION_VALIDATION_START_BY_MARKET = {
     "US": date(1970, 1, 1),
 }
 
-# XKRX 4.13.2 does not yet include these newly designated 2026 holidays.
+# XKRX 4.13.2 misses a few one-off Korean market closures we verified separately.
 KNOWN_NON_SESSIONS = {
     "KR": {
+        date(2007, 3, 2),
         date(2026, 6, 3),
         date(2026, 7, 17),
     },

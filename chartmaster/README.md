@@ -182,7 +182,7 @@ Latest Phase 5 verification:
 
 - 29 assets passed the quality check.
 - Error count: 0.
-- Warning count: 12.
+- Warning count: 1.
 - Korean manual validation run: collect, curate, and validate tasks succeeded.
 - Recent KR and US scheduled Airflow runs succeeded.
 - KRX-authenticated raw-source verification is tracked as a later enhancement, not a Phase 5 blocker.
