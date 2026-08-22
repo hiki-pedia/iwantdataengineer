@@ -7,6 +7,8 @@ Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 �
 - 29개 자산 레지스트리 표시
 - 2026-08-22에 확인한 Server 2 품질 결과를 Mock 스냅샷으로 표시
 - 차트 시계열은 `DEMO SERIES`로 명시
+- 차트 호버에서 날짜, OHLCV 표시
+- `5Y / 1Y / 6M / 1M / 5D` 기간 버튼과 휠 단계 전환
 - 모델이 없으므로 예측 확률을 생성하지 않고 `model_not_ready`로 표시
 - `VITE_CHARTMASTER_API_URL`이 있으면 API provider, 없으면 Mock provider 사용
 
@@ -59,8 +61,22 @@ GET /api/v1/assets/{symbol}/prices?range=6M
   "trainedThrough": null,
   "dataQuality": "watch",
   "metricSummary": null,
-  "uncertaintyNote": "학습과 시간순 검증이 끝난 모델이 없어 확률을 제공하지 않습니다."
+  "uncertaintyNote": "학습과 시간순 검증이 끝난 모델이 없어 확률을 제공하지 않습니다.",
+  "forecastPoints": []
 }
 ```
 
 실제 확률을 제공할 때는 모델 버전, 학습 데이터 기준일, 평가 지표와 데이터 품질을 함께 반환해야 한다.
+
+차트의 예측 연장선은 `forecastPoints`가 있을 때만 표시한다. 각 점은 미래 거래일의 예측 종가와 선택적인 하한·상한을 제공한다.
+
+```json
+{
+  "date": "2026-08-24",
+  "predictedClose": 285000,
+  "lowerBound": 278000,
+  "upperBound": 292000
+}
+```
+
+현재 정의한 방향성 분류 모델은 상승 확률만 출력하므로 위 가격 경로를 직접 만들 수 없다. 예측선을 실제로 제공하려면 일별 수익률 또는 가격 경로를 출력하는 별도 모델과 검증 지표가 필요하다.

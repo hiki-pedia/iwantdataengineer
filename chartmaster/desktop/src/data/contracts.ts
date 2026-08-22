@@ -71,6 +71,14 @@ export type Prediction = {
   dataQuality: DataStatus;
   metricSummary: string | null;
   uncertaintyNote: string;
+  forecastPoints: ForecastPoint[];
+};
+
+export type ForecastPoint = {
+  date: string;
+  predictedClose: number;
+  lowerBound: number | null;
+  upperBound: number | null;
 };
 
 export type Report = {
