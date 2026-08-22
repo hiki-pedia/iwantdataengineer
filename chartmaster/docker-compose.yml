@@ -23,6 +23,27 @@ x-airflow-common: &airflow-common
   restart: unless-stopped
 
 services:
+  chartmaster-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      PYTHONPATH: /opt/chartmaster/src
+    volumes:
+      - .:/opt/chartmaster:ro
+      - ../.env:/opt/.env:ro
+      - /home/dnhs01/.ssh:/home/dnhs01/.ssh:ro
+    user: "${AIRFLOW_UID:-1000}:0"
+    ports:
+      - "${CHARTMASTER_API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
   airflow-postgres:
     image: postgres:16-alpine
     environment:
