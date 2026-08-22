@@ -1,6 +1,8 @@
 pandas==2.2.2
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
+exchange-calendars==4.13.2
+pykrx==1.2.8
 psycopg[binary]==3.3.4
 scikit-learn==1.5.1
 yfinance==1.5.2

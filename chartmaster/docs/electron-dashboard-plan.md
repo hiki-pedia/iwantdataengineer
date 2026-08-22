@@ -358,7 +358,7 @@ uncertainty_note
 20D
 ```
 
-Phase 3에서는 mock prediction을 사용하고, 실제 모델은 Phase 6 이후 연결한다.
+Phase 3에서는 mock prediction을 사용하고, 실제 모델은 Phase 7 이후 연결한다.
 
 ## 10. Airflow / Pipelines 화면
 
@@ -423,7 +423,7 @@ http://server1:8081
 
 AI 리포트와 이벤트 리포트를 보는 화면이다.
 
-Phase 3에서는 mock report를 사용하고, 실제 리포트 생성은 Phase 10에서 붙인다.
+Phase 3에서는 mock report를 사용하고, 실제 외부 요인 요약과 리포트 생성은 Phase 8 이후 붙인다.
 
 보여줄 정보:
 

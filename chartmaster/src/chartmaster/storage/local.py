@@ -169,6 +169,11 @@ def relative_market_features_path(symbol: str) -> PurePosixPath:
     return PurePosixPath("processed") / "features" / f"symbol={symbol}" / "data.csv"
 
 
+def relative_market_curated_path(symbol: str) -> PurePosixPath:
+    """Return the canonical curated market data path for a symbol."""
+    return PurePosixPath("curated") / "market_data" / f"symbol={symbol}" / "data.csv"
+
+
 def relative_model_version_dir(model_name: str, version: str) -> PurePosixPath:
     """Return the model artifact relative directory for a model version."""
     return PurePosixPath("models") / model_name / f"version={version}"

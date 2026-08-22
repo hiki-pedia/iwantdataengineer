@@ -7,10 +7,11 @@ def build_basic_market_features(ohlcv: pd.DataFrame) -> pd.DataFrame:
     """Build the first OHLCV-based feature set."""
     features = ohlcv.sort_values("date").copy()
     features["turnover_value"] = features["close"] * features["volume"]
-    features["return_1d"] = features["close"].pct_change(1)
-    features["return_5d"] = features["close"].pct_change(5)
-    features["return_20d"] = features["close"].pct_change(20)
-    features["volume_change_1d"] = features["volume"].pct_change(1)
+    features["return_1d"] = features["close"].pct_change(1, fill_method=None)
+    features["return_5d"] = features["close"].pct_change(5, fill_method=None)
+    features["return_20d"] = features["close"].pct_change(20, fill_method=None)
+    volume_change = features["volume"].pct_change(1, fill_method=None)
+    features["volume_change_1d"] = volume_change.replace([float("inf"), float("-inf")], float("nan"))
     features["moving_average_5"] = features["close"].rolling(5).mean()
     features["moving_average_20"] = features["close"].rolling(20).mean()
     features["volatility_5"] = features["return_1d"].rolling(5).std()

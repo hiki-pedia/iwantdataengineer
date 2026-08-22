@@ -664,7 +664,7 @@ Docker daemon socket 권한 문제, Airflow 컨테이너 UID 문제, Airflow sta
 
 ## 20. 현재 상태 요약
 
-현재 ChartMaster는 Phase 1과 Phase 3을 완료했고, Phase 2 자동 수집을 운영하고 있다. Phase 4의 핵심 FastAPI 조회 계층도 구현했으며, 다시 Phase 5 데이터 품질과 재처리의 남은 운영 검증을 진행하는 상태다.
+현재 ChartMaster는 Phase 1, Phase 3, Phase 5를 완료했고, Phase 2 자동 수집을 운영하고 있다. Phase 4의 핵심 FastAPI 조회 계층도 구현했다. 다음 단계에서는 운영 안정성과 백업/복구 절차를 정리한 뒤 모델 학습 파이프라인으로 넘어간다.
 
 ```text
 Phase 1: 완료
@@ -687,8 +687,10 @@ Phase 3: 완료
 Phase 4: 핵심 연결 구현
   Server 1 FastAPI에서 Server 2 실데이터와 품질 리포트 조회
 
-Phase 5: 진행 중
-  KRX 인증 원천 검증과 Airflow 정기 품질 Task 운영 검증 재개
+Phase 5: 완료
+  데이터 품질 검사, 거래소 캘린더, curated 계층, 재처리, Airflow 품질 Gate 구현
+  최신 품질 검사 29종목 PASS, 오류 0, 경고 12
+  KRX 인증 기반 독립 원천 검증은 후속 보강 항목으로 분리
 ```
 
-다음으로는 AWS나 모델링으로 바로 넘어가지 않고 Phase 5의 데이터 품질 운영 검증을 마무리한다. Electron 화면과 핵심 API 계약이 마련됐으므로 이후 품질 Gate, 모델 결과와 RAG 리포트를 연결할 표시 위치도 명확해졌다.
+다음으로는 AWS나 모델링으로 바로 넘어가지 않고 Phase 6에서 백업, 복구, 장애 대응, 운영 점검 절차를 먼저 정리한다. Electron 화면과 핵심 API 계약이 마련됐으므로 이후 품질 Gate, 모델 결과와 RAG 리포트를 연결할 표시 위치도 명확해졌다.

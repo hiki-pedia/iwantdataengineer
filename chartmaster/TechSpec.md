@@ -29,7 +29,7 @@ Airflow
   -> generate AI report
 ```
 
-초기 로컬 단계에서는 S3와 SageMaker를 바로 붙이지 않는다. 먼저 서버2 파일 저장소와 PostgreSQL을 이용해 raw/processed 저장 구조와 Airflow 자동화를 만든다. 그 다음에는 데이터 품질과 모델링이 안정되기를 기다리기보다, Electron Dashboard UI와 FastAPI 응답 계약을 mock data 기반으로 먼저 고정한다. 이후 종목 유니버스 검증, 로컬 모델 학습, RAG/AI 리포트, AWS 이전 순서로 확장한다.
+초기 로컬 단계에서는 S3와 SageMaker를 바로 붙이지 않는다. 먼저 서버2 파일 저장소와 PostgreSQL을 이용해 raw/processed 저장 구조와 Airflow 자동화를 만든다. 그 다음에는 데이터 품질과 모델링이 안정되기를 기다리기보다, Electron Dashboard UI와 FastAPI 응답 계약을 mock data 기반으로 먼저 고정한다. 이후 데이터 품질/재처리, 백업/복구, 로컬 모델 학습, RAG/외부 요인 분석, AWS 이전 순서로 확장한다.
 
 ## 3. 기술 스택
 
@@ -80,6 +80,7 @@ AWS 적용 후에는 다음 구조를 기본으로 사용한다.
 
 ```text
 s3://chartmaster-{env}/raw/market_data/{provider}/{symbol}/date=YYYY-MM-DD/
+s3://chartmaster-{env}/curated/market_data/{symbol}/date=YYYY-MM-DD/
 s3://chartmaster-{env}/raw/external_documents/{source}/date=YYYY-MM-DD/
 s3://chartmaster-{env}/processed/features/{symbol}/as_of=YYYY-MM-DD/
 s3://chartmaster-{env}/processed/text_features/{symbol}/as_of=YYYY-MM-DD/
@@ -98,6 +99,8 @@ PostgreSQL은 대용량 시계열 원천 데이터를 모두 담는 저장소라
 | --- | --- |
 | `assets` | 관리 대상 자산 목록 |
 | `pipeline_runs` | Airflow 또는 ETL 실행 이력 |
+| `datasets` | raw, curated, processed 데이터셋 위치와 행 수 |
+| `data_quality_issues` | 품질 문제, 심각도, 처리 상태와 해결 방법 |
 | `model_versions` | 모델 버전, 학습일, 산출물 위치 |
 | `model_metrics` | 모델 평가 지표 |
 | `predictions` | 최신 예측 결과 |
@@ -285,7 +288,8 @@ data_limitations
 
 | DAG | 역할 |
 | --- | --- |
-| `daily_market_data_etl` | 일별 시장 데이터 수집과 피처 생성 |
+| `daily_kr_market_data_etl` | 한국장 일별 수집, 교차 검증, curated 생성과 품질 검사 |
+| `daily_us_market_data_etl` | 미국장 일별 수집과 품질 검사 |
 | `daily_external_factor_etl` | 뉴스/문서 수집, 감성 분석, RAG 인덱스 갱신 |
 | `weekly_model_training` | 주기적 모델 학습 |
 | `model_evaluation_and_deploy` | 모델 평가와 배포 후보 등록 |
@@ -293,17 +297,17 @@ data_limitations
 
 학습 초기에는 하나의 DAG에서 전체 흐름을 연결하고, 구조가 안정되면 DAG를 분리한다.
 
-### 10.1 `daily_market_data_etl`
+### 10.1 시장 데이터 DAG
 
 ```text
-load_asset_registry
-  -> collect_market_data
-  -> validate_raw_data
-  -> write_raw_data
-  -> build_features
-  -> validate_features
-  -> write_processed_features
-  -> update_metadata
+daily_kr_market_data_etl
+  collect_kr_daily_ohlcv
+    -> curate_kr_market_data
+    -> validate_kr_market_data
+
+daily_us_market_data_etl
+  collect_us_daily_ohlcv
+    -> validate_us_market_data
 ```
 
 ### 10.2 `daily_external_factor_etl`
@@ -347,51 +351,88 @@ load_latest_prediction
   -> write_report_snapshot
 ```
 
-## 11. AWS 연동 계획
+## 11. 단계별 확장 계획
 
-AWS는 한 번에 붙이지 않고 단계적으로 붙인다.
+AWS는 초반에 바로 붙이지 않는다. 먼저 로컬 서버1/서버2 구조에서 데이터 수집, 저장, 자동화, 검증 흐름을 직접 다룬 뒤, 같은 역할을 AWS 관리형 서비스로 이전한다.
 
-### Phase 1: Local Server Platform
+### Phase 1: 로컬 시장 데이터 기준선과 서버2 저장 구조
 
-- Docker Compose 기반 Airflow 실행
-- 서버2 파일 저장소에 raw/processed/model/report 데이터 저장
-- 서버2 PostgreSQL에 데이터셋과 실행 이력 metadata 저장
+- 과거 OHLCV 데이터를 백필한다.
+- 서버2 파일 저장소에 raw/processed 데이터를 분리 저장한다.
+- 서버2 PostgreSQL에 데이터셋 위치와 실행 이력 metadata를 기록한다.
+- 로컬 수동 ETL이 정상 동작하는지 검증한다.
 
-### Phase 2: App Contract Prototype
+### Phase 2: Airflow 로컬 자동화
 
-- Electron Dashboard mock prototype 작성
-- Dashboard, Assets, Asset Detail, Pipelines, Models, Reports 화면 설계
-- mock JSON 기반 UI 상태 검증
-- FastAPI response contract 정의
+- Docker Compose 기반 Airflow를 서버1에서 실행한다.
+- 한국장/미국장 장마감 시간을 고려해 DAG를 분리한다.
+- catchup, retry, 10일 overlap merge, dedup 구조를 적용한다.
+- 서버 재시작 후 Airflow가 자동으로 다시 올라오는지 확인한다.
 
-### Phase 3: Local Data and MLOps
+### Phase 3: Electron Dashboard UI 설계와 Mock Prototype
 
-- 국내장/미국장 종목 유니버스 검증
-- 데이터 소스 커버리지와 품질 확인
-- 로컬 Python 모델 학습
-- Airflow에서 모델 재학습 DAG 실행
-- 모델 버전과 metric 기록
-- RAG/감성 피처와 딥러닝 실험을 로컬 구조에서 검증
+- 로컬 PC에서 Electron Desktop Application을 만든다.
+- Dashboard, Assets, Asset Detail, Events, Airflow/Pipelines 화면을 우선 구현한다.
+- 모델/RAG/리포트가 완성되기 전에는 mock JSON으로 UI와 정보 구조를 검증한다.
+- Phase 4에서 사용할 API response shape을 화면 요구사항에서 역설계한다.
 
-### Phase 4: S3/RDS
+### Phase 4: FastAPI 데이터 제공 계층과 서비스 경계 설계
 
-- raw 데이터 S3 저장
-- processed 피처 S3 저장
-- 모델 산출물 S3 저장
-- 서버2 PostgreSQL metadata를 RDS PostgreSQL로 이전
+- Electron 앱이 서버2 파일 저장소나 PostgreSQL에 직접 접근하지 않도록 FastAPI 계층을 둔다.
+- mock provider와 live provider를 분리한다.
+- 종목, 가격, 피처, 파이프라인 상태, 모델 metric, 리포트 조회 API를 정의한다.
+- 서버1 API 계층과 서버2 데이터 저장소의 연결 지점을 명확히 한다.
+- 환경변수, API URL, DB 접속 정보, Airflow UI URL 같은 설정 값을 코드와 분리한다.
 
-### Phase 5: SageMaker
+### Phase 5: 데이터 품질, 백필, 재처리 전략
 
-- Airflow에서 SageMaker Training Job 실행
-- 학습 산출물을 S3에 저장
-- 평가 결과를 PostgreSQL과 S3에 기록
+- 국내장/미국장 종목 수를 늘린 결과를 검증한다.
+- yfinance, pykrx, Stooq 등 데이터 소스별 coverage gap을 비교한다.
+- 데이터 누락, 중복, 날짜 범위, row count 차이를 점검한다.
+- 거래소 세션 캘린더로 실제 휴장일과 누락일을 구분한다.
+- 원천 데이터는 보존하고 교차 검증 결과를 curated 계층에 반영한다.
+- 품질 이력을 PostgreSQL `data_quality_issues`에 기록한다.
+- 백필 재실행 전략과 실패 데이터 재처리 절차를 만든다.
+- 신규 ETF나 상장 이력이 짧은 종목은 experimental tier로 분리한다.
 
-### Phase 6: 운영 관찰성
+### Phase 6: 운영 안정성과 백업/복구 설계
 
-- CloudWatch 로그 확인
-- 실패 알림
-- 재시도 정책
-- 백업 정책
+- 서버2 raw/processed 파일 저장소 백업 전략을 만든다.
+- 서버2 PostgreSQL metadata DB의 backup/restore 절차를 만든다.
+- Airflow DAG 실패, 재시도, 수동 재실행 절차를 문서화한다.
+- 컨테이너 재시작, 서버 재부팅, 네트워크 일시 장애 시 확인할 항목을 정리한다.
+- 운영 로그와 상태 점검 체크리스트를 만든다.
+
+### Phase 7: 머신러닝 모델 학습 파이프라인
+
+- processed feature 데이터로 baseline 모델을 학습한다.
+- time series split을 적용한다.
+- naive baseline과 비교한다.
+- 모델 artifact와 metric을 서버2 파일 저장소와 PostgreSQL metadata에 기록한다.
+- 이후 Airflow 기반 재학습으로 확장할 수 있게 구조를 잡는다.
+
+### Phase 8: RAG와 외부 요인 분석 계층
+
+- 뉴스, 리포트, 매크로 이벤트 문서를 수집한다.
+- document metadata, chunk, embedding, vector index 구조를 만든다.
+- 종목/날짜별 외부 요인 요약과 감성/event feature를 생성한다.
+- Electron Events/Reports 화면과 연결한다.
+
+### Phase 9: 로컬 운영 구조를 AWS로 이전
+
+- 서버2 파일 저장소를 S3 bucket/prefix 구조로 이전한다.
+- 서버2 PostgreSQL metadata DB를 RDS PostgreSQL로 이전한다.
+- `ssh://` 또는 local path 기반 `storage_uri`를 `s3://` URI 구조로 전환한다.
+- 로컬과 AWS storage provider를 설정으로 전환할 수 있게 만든다.
+- IAM, security group, 비용 관리 기준을 정리한다.
+
+### Phase 10: SageMaker와 운영 관찰성
+
+- Airflow에서 SageMaker Training Job을 실행한다.
+- S3의 processed feature 데이터를 입력으로 사용한다.
+- 모델 산출물과 평가 결과를 S3/RDS에 기록한다.
+- CloudWatch 로그, 실패 알림, 재시도, 백업 정책을 확인한다.
+- 로컬 Airflow 운영 경험과 AWS 관리형 서비스 운영 경험을 비교한다.
 
 ## 12. FastAPI 인터페이스
 
