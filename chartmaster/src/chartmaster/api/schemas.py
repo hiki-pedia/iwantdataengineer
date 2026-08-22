@@ -44,6 +44,16 @@ class DataCheckResponse(BaseModel):
     detail: str
 
 
+class QualityIssueResponse(BaseModel):
+    symbol: str
+    market: Literal["KR", "US"]
+    severity: Literal["error", "warning"]
+    code: str
+    message: str
+    count: int
+    checkedAt: str
+
+
 class PipelineRunResponse(BaseModel):
     name: str
     status: Literal["success", "running", "failed", "queued", "planned", "unavailable"]
@@ -99,6 +109,7 @@ class DashboardResponse(BaseModel):
     sourceLabel: str
     assets: list[AssetResponse]
     dataChecks: list[DataCheckResponse]
+    qualityIssues: list[QualityIssueResponse]
     pipelineRuns: list[PipelineRunResponse]
     events: list[MarketEventResponse]
     predictions: list[PredictionResponse]

@@ -13,7 +13,7 @@ import {
   Workflow,
   X
 } from "lucide-react";
-import type { Asset, DashboardSnapshot, Prediction, StockCandle } from "./data/contracts";
+import type { Asset, DashboardSnapshot, Prediction, QualityIssue, StockCandle } from "./data/contracts";
 import { dataProvider } from "./data/provider";
 import { FinancialChart } from "./components/FinancialChart";
 import "./styles.css";
@@ -71,7 +71,14 @@ function App() {
           />
         )}
         {route === "data-status" && <DataStatusPage assets={snapshot.assets} />}
-        {route === "data-check" && <DataCheckPage checks={snapshot.dataChecks} />}
+        {route === "data-check" && (
+          <DataCheckPage
+            checks={snapshot.dataChecks}
+            issues={snapshot.qualityIssues}
+            assets={snapshot.assets}
+            setRoute={setRoute}
+          />
+        )}
         {route === "events" && <EventsPage events={snapshot.events} setRoute={setRoute} />}
         {route === "predictions" && <PredictionsPage assets={snapshot.assets} predictions={snapshot.predictions} setRoute={setRoute} />}
         {route === "pipelines" && <PipelinesPage assets={snapshot.assets} runs={snapshot.pipelineRuns} setRoute={setRoute} />}
@@ -158,7 +165,7 @@ function DashboardPage({ snapshot, setRoute }: { snapshot: DashboardSnapshot; se
       <section className="quote-strip summary-strip">
         <Quote label="전체 자산" value={snapshot.assets.length.toString()} />
         <Quote label="한국 / 미국" value={`${krCount} / ${snapshot.assets.length - krCount}`} />
-        <Quote label="품질 관찰" value={`${warningCount}종목`} tone={warningCount ? "watch" : "up"} />
+        <Quote label="품질 경고 종목" value={`${warningCount}종목`} tone={warningCount ? "watch" : "up"} />
         <Quote label="예측 모델" value="미준비" />
       </section>
       <section className="dashboard-band">
@@ -340,9 +347,43 @@ function DataStatusPage({ assets }: { assets: Asset[] }) {
   );
 }
 
-function DataCheckPage({ checks }: { checks: DashboardSnapshot["dataChecks"] }) {
+function DataCheckPage({
+  checks,
+  issues,
+  assets,
+  setRoute
+}: {
+  checks: DashboardSnapshot["dataChecks"];
+  issues: QualityIssue[];
+  assets: Asset[];
+  setRoute: (route: AppRoute) => void;
+}) {
+  const [market, setMarket] = useState<"ALL" | "KR" | "US">("ALL");
+  const [severity, setSeverity] = useState<"ALL" | "error" | "warning">("ALL");
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const filtered = issues.filter((issue) => {
+    const asset = assets.find((candidate) => candidate.symbol === issue.symbol);
+    const matchesMarket = market === "ALL" || issue.market === market;
+    const matchesSeverity = severity === "ALL" || issue.severity === severity;
+    const matchesQuery = !needle || [issue.symbol, asset?.name, issue.code, issue.message]
+      .some((value) => value?.toLowerCase().includes(needle));
+    return matchesMarket && matchesSeverity && matchesQuery;
+  });
+  const errorCount = issues.filter((issue) => issue.severity === "error").length;
+  const warningCount = issues.filter((issue) => issue.severity === "warning").length;
+  const affectedAssets = new Set(issues.map((issue) => issue.symbol)).size;
+  const checkedAt = [...issues].map((issue) => issue.checkedAt).filter(Boolean).sort().at(-1) ?? "-";
+
   return (
     <Page title="데이터 검증" icon={<SearchCheck />}>
+      <section className="quote-strip quality-summary-strip">
+        <Quote label="검사 기준일" value={checkedAt} />
+        <Quote label="오류" value={`${errorCount}건`} tone={errorCount ? "down" : "up"} />
+        <Quote label="경고" value={`${warningCount}건`} tone={warningCount ? "watch" : "up"} />
+        <Quote label="확인 필요 종목" value={`${affectedAssets}종목`} tone={affectedAssets ? "watch" : "up"} />
+      </section>
+      <div className="section-heading"><h2>시장별 검사 결과</h2><span>최신 품질 리포트 기준</span></div>
       <section className="panel-list">
         {checks.map((check) => (
           <article className="check-row" key={check.name}>
@@ -356,6 +397,34 @@ function DataCheckPage({ checks }: { checks: DashboardSnapshot["dataChecks"] }) 
           </article>
         ))}
       </section>
+      <div className="section-heading quality-issue-heading"><h2>품질 이슈 상세</h2><span>{filtered.length}건 표시</span></div>
+      <AssetFilterBar market={market} query={query} onMarket={setMarket} onQuery={setQuery} />
+      <div className="segmented-control quality-severity-filter">
+        {(["ALL", "error", "warning"] as const).map((value) => (
+          <button className={severity === value ? "active" : ""} key={value} onClick={() => setSeverity(value)}>
+            {value === "ALL" ? "전체" : value === "error" ? "오류" : "경고"}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 ? (
+        <SystemState title="표시할 품질 이슈 없음" detail="현재 필터 조건에 해당하는 오류나 경고가 없습니다." />
+      ) : (
+        <div className="quality-issue-list">
+          {filtered.map((issue) => {
+            const asset = assets.find((candidate) => candidate.symbol === issue.symbol);
+            return (
+              <button key={`${issue.market}-${issue.symbol}-${issue.code}`} onClick={() => setRoute(`asset:${issue.symbol}`)}>
+                <span className="entity-name"><strong>{issue.symbol}</strong><small>{asset?.name ?? issue.market}</small></span>
+                <em className={issue.severity}>{issue.severity === "error" ? "오류" : "경고"}</em>
+                <span className="quality-issue-name"><strong>{qualityIssueTitle(issue.code)}</strong><small>{issue.code}</small></span>
+                <span className="quality-issue-message">{qualityIssueDescription(issue)}</span>
+                <span><strong>{issue.count.toLocaleString()}</strong><small>영향 행</small></span>
+                <time>{issue.checkedAt}</time>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </Page>
   );
 }
@@ -577,7 +646,7 @@ function tierText(tier: string) {
 function statusText(status: string) {
   const labels: Record<string, string> = {
     ready: "정상",
-    watch: "관찰",
+    watch: "확인 필요",
     planned: "예정",
     pass: "통과",
     queued: "대기",
@@ -587,6 +656,41 @@ function statusText(status: string) {
     unavailable: "사용 불가"
   };
   return labels[status] ?? status;
+}
+
+function qualityIssueTitle(code: string) {
+  const labels: Record<string, string> = {
+    missing_expected_sessions: "예상 거래일 누락",
+    missing_latest_market_session: "최신 거래일 누락",
+    non_positive_adjusted_close: "수정주가 이상",
+    inconsistent_ohlc: "OHLC 가격 관계 이상",
+    duplicate_raw_dates: "원천 날짜 중복",
+    duplicate_feature_dates: "피처 날짜 중복",
+    raw_feature_date_mismatch: "원천·피처 날짜 불일치",
+    raw_feature_row_count_mismatch: "원천·피처 행 수 불일치",
+    stale_raw_dataset: "데이터 최신성 지연",
+    missing_raw_columns: "원천 필수 컬럼 누락",
+    missing_feature_columns: "피처 필수 컬럼 누락",
+    invalid_raw_numeric_values: "원천 숫자값 이상",
+    infinite_feature_values: "피처 무한값 발생",
+    non_positive_ohlc: "0 이하 가격 발생",
+    negative_volume: "음수 거래량 발생"
+  };
+  return labels[code] ?? code.split("_").join(" ");
+}
+
+function qualityIssueDescription(issue: QualityIssue) {
+  if (issue.code === "missing_expected_sessions") {
+    const dates = issue.message.split(":").slice(1).join(":").trim();
+    return `거래소 영업일로 예상했지만 데이터가 없는 날짜${dates ? `: ${dates}` : "가 있습니다."}`;
+  }
+  if (issue.code === "non_positive_adjusted_close") {
+    return "수정주가가 없거나 0 이하인 행입니다. 원천 데이터는 유지하고 다른 공급자와 교차 검증해야 합니다.";
+  }
+  if (issue.code === "inconsistent_ohlc") {
+    return "고가·저가가 시가·종가 범위를 충족하지 않는 행입니다. 다른 공급자와 비교가 필요합니다.";
+  }
+  return issue.message;
 }
 
 createRoot(document.getElementById("root") as HTMLElement).render(<App />);

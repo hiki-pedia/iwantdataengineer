@@ -22,6 +22,7 @@ from chartmaster.api.schemas import (
     PipelineRunResponse,
     PredictionResponse,
     PriceCandleResponse,
+    QualityIssueResponse,
     ReportResponse,
 )
 from chartmaster.config import Asset, load_assets
@@ -69,6 +70,7 @@ class DashboardService:
             sourceLabel="Server 2 live data via FastAPI",
             assets=asset_rows,
             dataChecks=self._data_checks(quality_reports),
+            qualityIssues=self._quality_issues(quality_reports),
             pipelineRuns=self._pipeline_status(asset_rows),
             events=self._events(asset_rows),
             predictions=[self._prediction(asset) for asset in asset_rows],
@@ -200,6 +202,24 @@ class DashboardService:
             checks.append(DataCheckResponse(name=f"{market} 시장 품질 검사", scope=f"{asset_count} assets", status=status, detail=detail))
         checks.append(DataCheckResponse(name="예측 모델", scope="5 trading days", status="queued", detail="모델 학습 전"))
         return checks
+
+    @staticmethod
+    def _quality_issues(reports: dict[str, dict]) -> list[QualityIssueResponse]:
+        issues = [
+            QualityIssueResponse(
+                symbol=str(asset.get("symbol", "")),
+                market=market,
+                severity=issue.get("severity", "error"),
+                code=str(issue.get("code", "unknown_quality_issue")),
+                message=str(issue.get("message", "No issue description was recorded.")),
+                count=int(issue.get("count", 1)),
+                checkedAt=str(report.get("as_of", "")),
+            )
+            for market, report in reports.items()
+            for asset in report.get("assets", [])
+            for issue in asset.get("issues", [])
+        ]
+        return sorted(issues, key=lambda issue: (issue.severity != "error", issue.market, issue.symbol, issue.code))
 
     @staticmethod
     def _pipeline_status(_assets: list[AssetResponse]) -> list[PipelineRunResponse]:

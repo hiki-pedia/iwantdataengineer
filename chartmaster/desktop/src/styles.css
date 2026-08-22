@@ -722,6 +722,78 @@ h2 {
   margin-top: 10px;
 }
 
+.quality-issue-heading {
+  margin-top: 12px;
+}
+
+.quality-severity-filter {
+  width: max-content;
+  margin-bottom: 10px;
+  grid-template-columns: repeat(3, 72px);
+}
+
+.quality-issue-list {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.quality-issue-list > button {
+  display: grid;
+  grid-template-columns: 150px 64px minmax(180px, 0.8fr) minmax(320px, 1.6fr) 80px 100px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 980px;
+  min-height: 72px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+.quality-issue-list > button:last-child {
+  border-bottom: 0;
+}
+
+.quality-issue-list > button:hover {
+  background: #121924;
+}
+
+.quality-issue-list em {
+  font-style: normal;
+  font-weight: 800;
+}
+
+.quality-issue-list small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.quality-issue-name,
+.quality-issue-list > button > span:nth-last-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.quality-issue-message {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.quality-issue-list time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .entity-table {
   min-width: 860px;
   border: 1px solid var(--line);
@@ -956,7 +1028,7 @@ h2 {
 
   .range-control {
     width: 100%;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .financial-chart-canvas {
@@ -974,5 +1046,19 @@ h2 {
   .report-row {
     grid-template-columns: 1fr;
     padding: 14px;
+  }
+
+  .quality-issue-list {
+    min-width: 0;
+  }
+
+  .quality-issue-list > button {
+    grid-template-columns: 1fr auto;
+    min-width: 0;
+  }
+
+  .quality-issue-message,
+  .quality-issue-name {
+    grid-column: 1 / -1;
   }
 }

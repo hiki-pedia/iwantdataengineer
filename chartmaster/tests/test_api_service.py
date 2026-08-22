@@ -39,6 +39,7 @@ def make_service(tmp_path) -> DashboardService:
     )
     storage.write_dataframe_csv(features, relative_market_features_path(TEST_ASSET.symbol))
     quality_report = {
+        "as_of": "2026-08-22",
         "summary": {"error_count": 0, "warning_count": 1},
         "assets": [
             {
@@ -46,7 +47,7 @@ def make_service(tmp_path) -> DashboardService:
                 "feature_row_count": 300,
                 "start_date": dates.min().strftime("%Y-%m-%d"),
                 "end_date": dates.max().strftime("%Y-%m-%d"),
-                "issues": [{"severity": "warning", "code": "test_warning"}],
+                "issues": [{"severity": "warning", "code": "test_warning", "message": "Test warning.", "count": 2}],
             }
         ],
     }
@@ -64,6 +65,9 @@ def test_dashboard_uses_real_storage_values_and_does_not_invent_predictions(tmp_
     assert dashboard.assets[0].latestClose == 399
     assert dashboard.assets[0].rowCount == 300
     assert dashboard.assets[0].dataStatus == "watch"
+    assert dashboard.qualityIssues[0].symbol == "TEST"
+    assert dashboard.qualityIssues[0].count == 2
+    assert dashboard.qualityIssues[0].checkedAt == "2026-08-22"
     assert dashboard.predictions[0].status == "model_not_ready"
     assert dashboard.predictions[0].forecastPoints == []
     assert dashboard.pipelineRuns[0].status == "unavailable"

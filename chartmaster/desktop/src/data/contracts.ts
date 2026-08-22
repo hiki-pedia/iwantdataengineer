@@ -39,6 +39,16 @@ export type DataCheck = {
   detail: string;
 };
 
+export type QualityIssue = {
+  symbol: string;
+  market: Market;
+  severity: "error" | "warning";
+  code: string;
+  message: string;
+  count: number;
+  checkedAt: string;
+};
+
 export type PipelineRun = {
   name: string;
   status: "success" | "running" | "failed" | "queued" | "planned" | "unavailable";
@@ -94,6 +104,7 @@ export type DashboardSnapshot = {
   sourceLabel: string;
   assets: Asset[];
   dataChecks: DataCheck[];
+  qualityIssues: QualityIssue[];
   pipelineRuns: PipelineRun[];
   events: MarketEvent[];
   predictions: Prediction[];

@@ -1,5 +1,5 @@
 import assetRegistry from "../../../config/assets.json";
-import type { Asset, DashboardSnapshot, Prediction, StockCandle } from "./contracts";
+import type { Asset, DashboardSnapshot, Prediction, QualityIssue, StockCandle } from "./contracts";
 
 type AssetSnapshot = [number, string, string, number, number, number];
 
@@ -87,6 +87,26 @@ const predictions: Prediction[] = mockAssets.map((asset) => ({
   forecastPoints: []
 }));
 
+const qualityIssues: QualityIssue[] = Object.keys(krWarnings).map((symbol) => ({
+  symbol,
+  market: "KR",
+  severity: "warning",
+  code: "missing_expected_sessions",
+  message: "Missing expected exchange sessions: 2007-03-02",
+  count: 1,
+  checkedAt: "2026-08-22"
+}));
+
+qualityIssues.push({
+  symbol: "000660.KS",
+  market: "KR",
+  severity: "warning",
+  code: "non_positive_adjusted_close",
+  message: "Adjusted close contains zero or negative values; retain raw data and verify with another provider.",
+  count: 778,
+  checkedAt: "2026-08-22"
+});
+
 export const mockSnapshot: DashboardSnapshot = {
   generatedAt: "2026-08-22T16:40:47+09:00",
   sourceMode: "mock",
@@ -98,6 +118,7 @@ export const mockSnapshot: DashboardSnapshot = {
     { name: "중복 날짜", scope: "raw and curated", status: "pass", detail: "중복 row 0개" },
     { name: "한국장 보조 공급자", scope: "pykrx_naver", status: "watch", detail: "KRX 인증 원천 검증 대기" }
   ],
+  qualityIssues,
   pipelineRuns: [
     { name: "daily_kr_market_data_etl", status: "success", lastRun: "2026-08-22 16:25", nextRun: "스케줄 실행", rows: 12 },
     { name: "daily_us_market_data_etl", status: "success", lastRun: "2026-08-22 검증", nextRun: "스케줄 실행", rows: 17 },
