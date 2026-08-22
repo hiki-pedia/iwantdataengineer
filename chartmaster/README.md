@@ -206,6 +206,8 @@ Current Phase 6 verification:
 - ChartMaster PostgreSQL metadata dump was created with the Server 2 PostgreSQL container's `pg_dump`.
 - The metadata dump was restored into a temporary database with `ON_ERROR_STOP=1`, then the temporary database was dropped.
 - FastAPI container restart drill passed, and `/health` plus Docker health recovered.
+- Airflow webserver and scheduler restart drills passed.
+- A read-only quality failure drill returned non-zero exit status without overwriting the live quality report.
 
 Phase 6 references:
 

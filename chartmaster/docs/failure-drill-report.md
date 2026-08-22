@@ -127,29 +127,139 @@ PASS
 FastAPI 컨테이너 단독 재시작 후 Server 2 SSH 저장소를 다시 읽을 수 있고, Docker healthcheck도 정상으로 복귀했다.
 ```
 
+### 6. Airflow webserver 재시작
+
+명령:
+
+```bash
+docker restart chartmaster-airflow-webserver-1
+curl -sf http://127.0.0.1:8081/health
+
+cd /home/dnhs01/iwantdataengineer/chartmaster
+docker compose --env-file ../.env exec -T airflow-scheduler \
+  airflow dags list | rg 'daily_(kr|us)_market_data_etl|dag_id'
+```
+
+결과:
+
+```text
+docker health: healthy
+airflow /health: ok
+daily_kr_market_data_etl loaded, is_paused=False
+daily_us_market_data_etl loaded, is_paused=False
+```
+
+판정:
+
+```text
+PASS
+```
+
+의미:
+
+```text
+Airflow webserver 재시작은 UI/API 계층 재기동이며 scheduler와 DAG 이력은 유지된다.
+```
+
+### 7. Airflow scheduler 재시작
+
+명령:
+
+```bash
+docker restart chartmaster-airflow-scheduler-1
+
+cd /home/dnhs01/iwantdataengineer/chartmaster
+docker compose --env-file ../.env exec -T airflow-scheduler \
+  airflow jobs check --job-type SchedulerJob
+
+docker compose --env-file ../.env exec -T airflow-scheduler \
+  airflow dags list-runs -d daily_kr_market_data_etl --no-backfill -o table | head
+
+docker compose --env-file ../.env exec -T airflow-scheduler \
+  airflow dags list-runs -d daily_us_market_data_etl --no-backfill -o table | head
+```
+
+결과:
+
+```text
+SchedulerJob: Found one alive job.
+daily_kr_market_data_etl recent runs visible
+daily_us_market_data_etl recent runs visible
+```
+
+판정:
+
+```text
+PASS
+```
+
+의미:
+
+```text
+스케줄러 단독 재시작 후 Airflow metadata DB의 DAG run 이력을 계속 조회할 수 있고 scheduler job도 정상으로 확인된다.
+```
+
+### 8. 품질 검사 실패 유도
+
+운영 데이터와 최신 품질 리포트를 손상시키지 않기 위해 임시 빈 로컬 저장소와 `--no-write-report`를 사용했다.
+
+명령:
+
+```bash
+tmpdir=$(mktemp -d)
+
+CHARTMASTER_DATA_DIR="$tmpdir" \
+PYTHONDONTWRITEBYTECODE=1 \
+PYTHONPATH=chartmaster/src \
+chartmaster/.venv/bin/python -m chartmaster.pipelines.local_market_data_quality \
+  --symbols 005930.KS \
+  --as-of 2026-08-23 \
+  --local-only \
+  --no-write-report
+```
+
+결과:
+
+```text
+005930.KS: FAIL raw_rows=0 feature_rows=0 range=None..None
+  ERROR missing_raw_dataset: No such file or directory
+Summary: assets=1 passed=0 failed=1 errors=1 warnings=0
+Report: disabled
+exit_status=1
+```
+
+판정:
+
+```text
+PASS
+```
+
+의미:
+
+```text
+품질 검사에서 error-level 문제가 발생하면 프로세스가 non-zero exit code로 종료된다. Airflow BashOperator에서는 이 상태가 Task 실패로 기록된다.
+```
+
 ## 아직 진행하지 않은 장애 실험
 
 다음 실험은 이후 순서대로 진행한다.
 
 | 우선순위 | 실험 | 위험도 | 확인할 것 |
 | --- | --- | --- | --- |
-| 1 | Airflow webserver 재시작 | 낮음 | UI 복구와 DAG 상태 유지 |
-| 2 | Airflow scheduler 재시작 | 중간 | 스케줄러 재기동 후 DAG 실행 유지 |
-| 3 | 품질 검사 실패 유도 | 중간 | error 발생 시 Task 실패 |
-| 4 | Server 2 SSH 실패 시뮬레이션 | 중간 | ETL 실패 로그와 retry |
-| 5 | PostgreSQL 중단/복구 | 높음 | metadata 기록 실패와 복구 절차 |
+| 1 | Server 2 SSH 실패 시뮬레이션 | 중간 | ETL 실패 로그와 retry |
+| 2 | PostgreSQL 중단/복구 | 높음 | metadata 기록 실패와 복구 절차 |
 
 ## 다음 실험 후보
 
-다음 단계에서는 Airflow webserver 재시작을 수행한다.
+다음 단계에서는 Server 2 SSH 실패 시뮬레이션을 수행한다.
 
 확인 순서:
 
 ```text
-docker restart chartmaster-airflow-webserver-1
-  -> docker ps health 확인
-  -> Airflow UI 접속 확인
-  -> DAG 목록 확인
+잘못된 Server 2 host/user/env로 수동 ETL 실행
+  -> SSH 실패 로그 확인
+  -> non-zero exit 확인
+  -> 실제 env로 정상 복구 확인
 ```
 
-이 실험은 Airflow webserver만 재시작하며 scheduler와 Server 2 데이터는 변경하지 않는다.
+이 실험은 운영 SSH 설정을 변경하지 않고, 임시 환경변수로 실패를 유도한다.

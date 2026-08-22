@@ -143,7 +143,7 @@ temporary database: dropped
 
 ## 장애 실험은 낮은 위험부터
 
-아직 모든 장애 실험을 실행하지는 않았다. 먼저 가장 낮은 위험인 FastAPI 컨테이너 재시작을 수행했고, 이후 실험 순서를 낮은 위험부터 정했다.
+아직 모든 장애 실험을 실행하지는 않았다. 먼저 낮은 위험 실험인 FastAPI 컨테이너 재시작, Airflow webserver 재시작, Airflow scheduler 재시작, 품질 검사 실패 유도를 수행했다.
 
 FastAPI 재시작 실험:
 
@@ -153,14 +153,40 @@ docker restart chartmaster-chartmaster-api-1
   -> Docker health 상태 healthy 복귀
 ```
 
+Airflow webserver 재시작 실험:
+
+```text
+docker restart chartmaster-airflow-webserver-1
+  -> /health 정상 응답
+  -> Docker health 상태 healthy 복귀
+  -> DAG 목록 조회 성공
+```
+
+Airflow scheduler 재시작 실험:
+
+```text
+docker restart chartmaster-airflow-scheduler-1
+  -> SchedulerJob alive 확인
+  -> 한국장/미국장 DAG run 이력 조회 성공
+```
+
+품질 실패 실험:
+
+```text
+임시 빈 로컬 저장소 + --no-write-report
+  -> missing_raw_dataset error
+  -> exit status 1
+  -> 운영 품질 리포트 미변경
+```
+
 | 순서 | 실험 | 목적 |
 | --- | --- | --- |
 | 완료 | FastAPI 컨테이너 재시작 | healthcheck와 자동 복구 확인 |
-| 1 | Airflow webserver 재시작 | UI 복구와 DAG 상태 유지 확인 |
-| 2 | Airflow scheduler 재시작 | 스케줄 유지 확인 |
-| 3 | 품질 검사 실패 유도 | Airflow Task 실패와 로그 확인 |
-| 4 | Server 2 SSH 실패 시뮬레이션 | retry와 실패 로그 확인 |
-| 5 | PostgreSQL 중단/복구 | metadata 기록 실패와 복구 절차 확인 |
+| 완료 | Airflow webserver 재시작 | UI 복구와 DAG 상태 유지 확인 |
+| 완료 | Airflow scheduler 재시작 | 스케줄러 job 복구 확인 |
+| 완료 | 품질 검사 실패 유도 | error 발생 시 non-zero exit 확인 |
+| 1 | Server 2 SSH 실패 시뮬레이션 | retry와 실패 로그 확인 |
+| 2 | PostgreSQL 중단/복구 | metadata 기록 실패와 복구 절차 확인 |
 
 운영 안정성 실험은 과감하게 하는 것보다 순서를 정하는 것이 중요하다. 특히 PostgreSQL 중단이나 SSH 차단은 실제 수집 작업에 영향을 줄 수 있으므로 백업과 복구 검증이 끝난 뒤 진행한다.
 
@@ -181,6 +207,9 @@ Server 1/Server 2 점검 명령 정리
 PostgreSQL dump 생성 및 임시 DB restore 검증
 장애 실험 우선순위 정의
 FastAPI 컨테이너 재시작 실험 PASS
+Airflow webserver 재시작 실험 PASS
+Airflow scheduler 재시작 실험 PASS
+품질 검사 실패 유도 PASS
 운영 점검 runbook 작성
 백업/복구 runbook 작성
 ```
