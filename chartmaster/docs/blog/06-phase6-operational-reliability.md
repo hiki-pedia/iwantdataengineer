@@ -143,7 +143,7 @@ temporary database: dropped
 
 ## 장애 실험은 낮은 위험부터
 
-아직 모든 장애 실험을 실행하지는 않았다. 먼저 낮은 위험 실험인 FastAPI 컨테이너 재시작, Airflow webserver 재시작, Airflow scheduler 재시작, 품질 검사 실패 유도를 수행했다.
+Phase 6에서는 낮은 위험 실험인 FastAPI 컨테이너 재시작, Airflow webserver 재시작, Airflow scheduler 재시작, 품질 검사 실패 유도, Server 2 SSH 실패 시뮬레이션을 수행했다.
 
 FastAPI 재시작 실험:
 
@@ -170,6 +170,8 @@ docker restart chartmaster-airflow-scheduler-1
   -> 한국장/미국장 DAG run 이력 조회 성공
 ```
 
+여기서 `Found one alive job`은 scheduler 재시작 후 Airflow SchedulerJob이 정상적으로 다시 살아났다는 뜻이다. 한국장/미국장 DAG run 이력을 조회할 수 있다는 것은 scheduler 재시작 뒤에도 Airflow metadata DB의 실행 기록이 유지된다는 의미다.
+
 품질 실패 실험:
 
 ```text
@@ -179,16 +181,26 @@ docker restart chartmaster-airflow-scheduler-1
   -> 운영 품질 리포트 미변경
 ```
 
+Server 2 SSH 실패 실험:
+
+```text
+임시 불통 주소 CHARTMASTER_SERVER2_HOST=192.0.2.1
+  -> ssh exit status 255
+  -> missing_raw_dataset error
+  -> exit status 1
+  -> 실제 설정으로 재검사 PASS
+```
+
 | 순서 | 실험 | 목적 |
 | --- | --- | --- |
 | 완료 | FastAPI 컨테이너 재시작 | healthcheck와 자동 복구 확인 |
 | 완료 | Airflow webserver 재시작 | UI 복구와 DAG 상태 유지 확인 |
 | 완료 | Airflow scheduler 재시작 | 스케줄러 job 복구 확인 |
 | 완료 | 품질 검사 실패 유도 | error 발생 시 non-zero exit 확인 |
-| 1 | Server 2 SSH 실패 시뮬레이션 | retry와 실패 로그 확인 |
-| 2 | PostgreSQL 중단/복구 | metadata 기록 실패와 복구 절차 확인 |
+| 완료 | Server 2 SSH 실패 시뮬레이션 | retry 대상 실패 로그 확인 |
+| 보류 | PostgreSQL 중단/복구 | 실제 metadata 기록에 영향이 있어 후속 점검으로 분리 |
 
-운영 안정성 실험은 과감하게 하는 것보다 순서를 정하는 것이 중요하다. 특히 PostgreSQL 중단이나 SSH 차단은 실제 수집 작업에 영향을 줄 수 있으므로 백업과 복구 검증이 끝난 뒤 진행한다.
+운영 안정성 실험은 과감하게 하는 것보다 순서를 정하는 것이 중요하다. PostgreSQL 중단은 실제 metadata 기록과 다음 수집 실행에 영향을 줄 수 있으므로 이번 Phase에서는 수행하지 않고 후속 운영 고도화 항목으로 보류했다.
 
 ## 이번 Phase에서 배운 점
 
@@ -205,15 +217,18 @@ docker restart chartmaster-airflow-scheduler-1
 Server 1/Server 2 점검 명령 정리
 파일 저장소 백업 생성 및 tar 검증
 PostgreSQL dump 생성 및 임시 DB restore 검증
-장애 실험 우선순위 정의
 FastAPI 컨테이너 재시작 실험 PASS
 Airflow webserver 재시작 실험 PASS
 Airflow scheduler 재시작 실험 PASS
 품질 검사 실패 유도 PASS
+Server 2 SSH 실패 시뮬레이션 PASS
+PostgreSQL 중단 실험은 후속 보류로 명시
 운영 점검 runbook 작성
 백업/복구 runbook 작성
 ```
 
+이 기준으로 Phase 6은 완료로 처리한다.
+
 ## 포트폴리오 설명 문장
 
-홈서버 기반 데이터 플랫폼에서 Airflow, FastAPI, PostgreSQL, SSH 파일 저장소의 정상 상태 기준을 정의하고 운영 점검 runbook을 작성했습니다. Server 2의 raw/curated/processed/reports 파일 저장소를 tar와 SHA256 manifest로 백업하고, ChartMaster metadata PostgreSQL은 동일 버전의 DB 컨테이너 `pg_dump`로 백업하도록 구성했습니다. 생성한 dump는 운영 DB를 덮어쓰지 않고 임시 DB에 복원해 `ON_ERROR_STOP=1` 기준으로 검증했으며, 이를 통해 백업 파일 생성이 아니라 실제 복구 가능성까지 확인했습니다.
+홈서버 기반 데이터 플랫폼에서 Airflow, FastAPI, PostgreSQL, SSH 파일 저장소의 정상 상태 기준을 정의하고 운영 점검 runbook을 작성했습니다. Server 2의 raw/curated/processed/reports 파일 저장소를 tar와 SHA256 manifest로 백업하고, ChartMaster metadata PostgreSQL은 동일 버전의 DB 컨테이너 `pg_dump`로 백업하도록 구성했습니다. 생성한 dump는 운영 DB를 덮어쓰지 않고 임시 DB에 복원해 `ON_ERROR_STOP=1` 기준으로 검증했습니다. 또한 FastAPI, Airflow webserver, Airflow scheduler 재시작과 품질 실패, Server 2 SSH 실패를 실험해 장애 감지와 복구 확인 절차를 문서화했습니다.

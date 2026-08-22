@@ -39,9 +39,10 @@ Phase 5: 완료
   최신 품질 검사 29종목 PASS, 오류 0, 경고 1
   KRX 인증 기반 독립 원천 검증은 후속 보강 항목으로 분리
 
-Phase 6: 진행 중
-  운영 정상 상태 기준, 파일 저장소 백업, PostgreSQL dump/restore 1차 검증 완료
-  낮은 위험 장애 실험부터 순차 진행 예정
+Phase 6: 완료
+  운영 정상 상태 기준, 파일 저장소 백업, PostgreSQL dump/restore 검증 완료
+  FastAPI/Airflow 재시작, 품질 실패, Server 2 SSH 실패 시뮬레이션 완료
+  PostgreSQL 중단 실험은 실제 metadata 기록 영향이 있어 후속 보류
 ```
 
 ## Phase 1: 로컬 시장 데이터 기준선과 서버2 저장 구조
@@ -209,13 +210,16 @@ Phase 6: 진행 중
 - 로그 확인 절차
 - 복구 테스트 기록
 
-현재 진행:
+완료 결과:
 
 - Server 1/Server 2 정상 상태 기준을 문서화했다.
 - Server 2 파일 저장소 tar 백업을 생성하고 목록을 확인했다.
 - Server 2 PostgreSQL metadata dump를 생성했다.
 - 운영 DB를 덮어쓰지 않고 임시 DB에 restore한 뒤 삭제하는 복구 테스트를 완료했다.
-- 장애 실험은 FastAPI 컨테이너 재시작부터 낮은 위험 순서로 진행한다.
+- FastAPI, Airflow webserver, Airflow scheduler 재시작 실험을 완료했다.
+- 운영 리포트를 덮어쓰지 않는 품질 실패 실험을 완료했다.
+- 운영 설정을 바꾸지 않는 Server 2 SSH 실패 시뮬레이션을 완료했다.
+- PostgreSQL 중단/복구 실험은 후속 운영 고도화 항목으로 보류했다.
 
 학습 포인트:
 

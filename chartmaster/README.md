@@ -208,6 +208,8 @@ Current Phase 6 verification:
 - FastAPI container restart drill passed, and `/health` plus Docker health recovered.
 - Airflow webserver and scheduler restart drills passed.
 - A read-only quality failure drill returned non-zero exit status without overwriting the live quality report.
+- Server 2 SSH failure drill returned non-zero exit status without changing the real SSH configuration.
+- PostgreSQL shutdown drill is intentionally deferred because it can affect live metadata writes.
 
 Phase 6 references:
 

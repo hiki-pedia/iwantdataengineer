@@ -692,8 +692,9 @@ Phase 5: 완료
   최신 품질 검사 29종목 PASS, 오류 0, 경고 1
   KRX 인증 기반 독립 원천 검증은 후속 보강 항목으로 분리
 
-Phase 6: 진행 중
-  운영 정상 상태 기준, 파일 저장소 백업, PostgreSQL dump/restore 1차 검증 완료
+Phase 6: 완료
+  운영 정상 상태 기준, 파일 저장소 백업, PostgreSQL dump/restore 검증 완료
+  FastAPI/Airflow 재시작, 품질 실패, Server 2 SSH 실패 시뮬레이션 완료
 ```
 
-다음으로는 Phase 6에서 낮은 위험 장애 실험을 순서대로 진행한다. Electron 화면과 핵심 API 계약이 마련됐으므로 이후 품질 Gate, 모델 결과와 RAG 리포트를 연결할 표시 위치도 명확해졌다.
+다음으로는 모델링으로 바로 넘어가기 전에 Phase 7에서 baseline 모델 문제 정의와 학습 파이프라인을 설계한다. Electron 화면과 핵심 API 계약이 마련됐으므로 이후 품질 Gate, 모델 결과와 RAG 리포트를 연결할 표시 위치도 명확해졌다.
