@@ -193,3 +193,23 @@ Phase 5 references:
 - `docs/data-source-coverage.md`
 - `docs/data-quality-strategy.md`
 - `docs/backfill-reprocessing-runbook.md`
+
+## Phase 6 Operational Reliability
+
+Phase 6 defines normal operating state, backup targets, restore checks, and failure-drill order before moving the platform to AWS.
+
+Current Phase 6 verification:
+
+- Server 1 Airflow/FastAPI containers are running, with webserver/API health checks healthy.
+- Server 2 SSH and `chartmaster-postgres` are reachable.
+- Server 2 file storage backup was created and tar listing was verified.
+- ChartMaster PostgreSQL metadata dump was created with the Server 2 PostgreSQL container's `pg_dump`.
+- The metadata dump was restored into a temporary database with `ON_ERROR_STOP=1`, then the temporary database was dropped.
+- FastAPI container restart drill passed, and `/health` plus Docker health recovered.
+
+Phase 6 references:
+
+- `docs/operation-runbook.md`
+- `docs/backup-restore-runbook.md`
+- `docs/failure-drill-report.md`
+- `docs/blog/06-phase6-operational-reliability.md`
