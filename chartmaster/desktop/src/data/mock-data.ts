@@ -83,7 +83,8 @@ const predictions: Prediction[] = mockAssets.map((asset) => ({
   trainedThrough: null,
   dataQuality: asset.dataStatus,
   metricSummary: null,
-  uncertaintyNote: "학습과 시간순 검증이 끝난 모델이 없어 확률을 제공하지 않습니다."
+  uncertaintyNote: "학습과 시간순 검증이 끝난 모델이 없어 확률을 제공하지 않습니다.",
+  forecastPoints: []
 }));
 
 export const mockSnapshot: DashboardSnapshot = {
@@ -134,7 +135,7 @@ const movingAverage = (values: number[], index: number, window: number) => {
   return slice.reduce((sum, value) => sum + value, 0) / slice.length;
 };
 
-export function buildMockCandles(asset: Asset, count = 96): StockCandle[] {
+export function buildMockCandles(asset: Asset, count = 126): StockCandle[] {
   const seed = seedFor(asset.symbol);
   const closes: number[] = [];
   const priceScale = asset.latestClose ?? 100;

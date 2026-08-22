@@ -15,9 +15,12 @@ import {
 } from "lucide-react";
 import type { Asset, DashboardSnapshot, Prediction, StockCandle } from "./data/contracts";
 import { dataProvider } from "./data/provider";
+import { FinancialChart } from "./components/FinancialChart";
 import "./styles.css";
 
 type AppRoute = `asset:${string}` | "dashboard" | "assets" | "data-status" | "data-check" | "events" | "predictions" | "pipelines" | "reports";
+const RANGE_OPTIONS = ["5Y", "1Y", "6M", "1M", "5D"] as const;
+type ChartRange = (typeof RANGE_OPTIONS)[number];
 
 function App() {
   const [route, setRoute] = useState<AppRoute>("dashboard");
@@ -70,9 +73,9 @@ function App() {
         {route === "data-status" && <DataStatusPage assets={snapshot.assets} />}
         {route === "data-check" && <DataCheckPage checks={snapshot.dataChecks} />}
         {route === "events" && <EventsPage events={snapshot.events} setRoute={setRoute} />}
-        {route === "predictions" && <PredictionsPage predictions={snapshot.predictions} setRoute={setRoute} />}
-        {route === "pipelines" && <PipelinesPage runs={snapshot.pipelineRuns} />}
-        {route === "reports" && <ReportsPage reports={snapshot.reports} />}
+        {route === "predictions" && <PredictionsPage assets={snapshot.assets} predictions={snapshot.predictions} setRoute={setRoute} />}
+        {route === "pipelines" && <PipelinesPage assets={snapshot.assets} runs={snapshot.pipelineRuns} setRoute={setRoute} />}
+        {route === "reports" && <ReportsPage assets={snapshot.assets} reports={snapshot.reports} setRoute={setRoute} />}
       </main>
     </div>
   );
@@ -220,14 +223,21 @@ function AssetPage({
 }) {
   const [candles, setCandles] = useState<StockCandle[]>([]);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [range, setRange] = useState<ChartRange>("5Y");
 
   useEffect(() => {
     setCandles([]);
     setPriceError(null);
-    dataProvider.loadPrices(asset.symbol, "6M").then(setCandles).catch((reason: unknown) => {
+    dataProvider.loadPrices(asset.symbol, range).then(setCandles).catch((reason: unknown) => {
       setPriceError(reason instanceof Error ? reason.message : "가격 데이터를 불러오지 못했습니다.");
     });
-  }, [asset.symbol]);
+  }, [asset.symbol, range]);
+
+  const stepRange = (direction: "in" | "out") => {
+    const current = RANGE_OPTIONS.indexOf(range);
+    const next = direction === "in" ? Math.min(current + 1, RANGE_OPTIONS.length - 1) : Math.max(current - 1, 0);
+    setRange(RANGE_OPTIONS[next]);
+  };
 
   return (
     <section className="asset-page">
@@ -253,9 +263,26 @@ function AssetPage({
 
       <section className="asset-layout">
         <div className="chart-panel">
+          <div className="chart-toolbar">
+            <div className="segmented-control range-control">
+              {RANGE_OPTIONS.map((option) => (
+                <button className={range === option ? "active" : ""} key={option} onClick={() => setRange(option)}>{option}</button>
+              ))}
+            </div>
+            <button className="icon-button" onClick={() => setIsExpanded(true)} title="차트 확대"><Expand size={18} /></button>
+          </div>
           {priceError && <SystemState title="가격 데이터 오류" detail={priceError} />}
           {!priceError && candles.length === 0 && <SystemState title="차트 불러오는 중" detail={asset.symbol} />}
-          {candles.length > 0 && <StockChart candles={candles} asset={asset} isDemo={sourceMode === "mock"} onExpand={() => setIsExpanded(true)} />}
+          {candles.length > 0 && (
+            <FinancialChart
+              asset={asset}
+              candles={candles}
+              forecastPoints={prediction?.forecastPoints ?? []}
+              range={range}
+              isDemo={sourceMode === "mock"}
+              onWheelStep={stepRange}
+            />
+          )}
         </div>
         <aside className="inspector">
           <h2>데이터</h2>
@@ -275,7 +302,16 @@ function AssetPage({
       {isExpanded && (
         <div className="chart-overlay">
           <div className="chart-modal">
-            <StockChart candles={candles} asset={asset} isDemo={sourceMode === "mock"} expanded onClose={() => setIsExpanded(false)} />
+            <button className="icon-button modal-close" onClick={() => setIsExpanded(false)} title="닫기"><X size={18} /></button>
+            <FinancialChart
+              asset={asset}
+              candles={candles}
+              forecastPoints={prediction?.forecastPoints ?? []}
+              range={range}
+              isDemo={sourceMode === "mock"}
+              expanded
+              onWheelStep={stepRange}
+            />
           </div>
         </div>
       )}
@@ -342,24 +378,36 @@ function EventsPage({ events, setRoute }: { events: DashboardSnapshot["events"];
   );
 }
 
-function PredictionsPage({ predictions, setRoute }: { predictions: Prediction[]; setRoute: (route: AppRoute) => void }) {
+function PredictionsPage({ assets, predictions, setRoute }: { assets: Asset[]; predictions: Prediction[]; setRoute: (route: AppRoute) => void }) {
+  const [query, setQuery] = useState("");
+  const [market, setMarket] = useState<"ALL" | "KR" | "US">("ALL");
+  const filtered = filterAssets(assets, market, query);
   return (
     <Page title="예측" icon={<Brain />}>
-      <section className="panel-list">
-        {predictions.map((prediction) => (
-          <button className="prediction-row" key={prediction.symbol} onClick={() => setRoute(`asset:${prediction.symbol}`)}>
-            <strong>{prediction.symbol}</strong>
-            <span>{prediction.horizonTradingDays}거래일 상승 여부</span>
-            <em className={prediction.status === "ready" ? "up" : "watch"}>{formatProbability(prediction.upProbability)}</em>
-            <span>{predictionStatusText(prediction.status)}</span>
-          </button>
-        ))}
-      </section>
+      <AssetFilterBar market={market} query={query} onMarket={setMarket} onQuery={setQuery} />
+      <div className="entity-table prediction-table">
+        <div className="entity-table-head"><span>종목</span><span>시장</span><span>기준일</span><span>기간</span><span>상승 확률</span><span>모델 상태</span></div>
+        {filtered.map((asset) => {
+          const prediction = predictions.find((item) => item.symbol === asset.symbol);
+          return (
+            <button key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
+              <span className="entity-name"><strong>{asset.symbol}</strong><small>{asset.name}</small></span>
+              <span>{asset.market}</span><span>{prediction?.asOf ?? "-"}</span>
+              <span>{prediction?.horizonTradingDays ?? 5}거래일</span>
+              <em className={prediction?.status === "ready" ? "up" : "watch"}>{formatProbability(prediction?.upProbability)}</em>
+              <span className={prediction?.status === "ready" ? "ready" : "watch"}>{predictionStatusText(prediction?.status)}</span>
+            </button>
+          );
+        })}
+      </div>
     </Page>
   );
 }
 
-function PipelinesPage({ runs }: { runs: DashboardSnapshot["pipelineRuns"] }) {
+function PipelinesPage({ assets, runs, setRoute }: { assets: Asset[]; runs: DashboardSnapshot["pipelineRuns"]; setRoute: (route: AppRoute) => void }) {
+  const [query, setQuery] = useState("");
+  const [market, setMarket] = useState<"ALL" | "KR" | "US">("ALL");
+  const filtered = filterAssets(assets, market, query);
   return (
     <Page title="파이프라인" icon={<Workflow />}>
       <section className="status-grid pipeline-grid">
@@ -375,27 +423,76 @@ function PipelinesPage({ runs }: { runs: DashboardSnapshot["pipelineRuns"] }) {
           </article>
         ))}
       </section>
+      <div className="section-heading pipeline-heading"><h2>종목별 최신 데이터</h2><span>DAG Task 상태가 아닌 최종 데이터 기준</span></div>
+      <AssetFilterBar market={market} query={query} onMarket={setMarket} onQuery={setQuery} />
+      <div className="entity-table pipeline-asset-table">
+        <div className="entity-table-head"><span>종목</span><span>시장</span><span>수집 DAG</span><span>최신 일자</span><span>행 수</span><span>품질</span></div>
+        {filtered.map((asset) => (
+          <button key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
+            <span className="entity-name"><strong>{asset.symbol}</strong><small>{asset.name}</small></span>
+            <span>{asset.market}</span><span>{asset.market === "KR" ? "daily_kr_market_data_etl" : "daily_us_market_data_etl"}</span>
+            <span>{asset.endDate}</span><span>{asset.rowCount.toLocaleString()}</span>
+            <span className={asset.dataStatus}>{asset.warningCount ? `경고 ${asset.warningCount}` : "통과"}</span>
+          </button>
+        ))}
+      </div>
     </Page>
   );
 }
 
-function ReportsPage({ reports }: { reports: DashboardSnapshot["reports"] }) {
+function ReportsPage({ assets, reports, setRoute }: { assets: Asset[]; reports: DashboardSnapshot["reports"]; setRoute: (route: AppRoute) => void }) {
+  const [query, setQuery] = useState("");
+  const [market, setMarket] = useState<"ALL" | "KR" | "US">("ALL");
+  const filtered = filterAssets(assets, market, query);
   return (
     <Page title="리포트" icon={<FileText />}>
-      <section className="panel-list">
-        {reports.map((report) => (
-          <article className="report-row" key={report.title}>
-            <FileText />
-            <div>
-              <strong>{report.title}</strong>
-              <span>{report.symbol} / {report.date ?? "생성 전"}</span>
-            </div>
-            <em className={report.status}>{statusText(report.status)}</em>
-          </article>
-        ))}
-      </section>
+      <AssetFilterBar market={market} query={query} onMarket={setMarket} onQuery={setQuery} />
+      <div className="entity-table report-table">
+        <div className="entity-table-head"><span>종목</span><span>시장</span><span>시장 요약</span><span>외부 요인</span><span>모델 평가</span><span>최근 생성</span></div>
+        {filtered.map((asset) => {
+          const assetReport = reports.find((report) => report.symbol === asset.symbol);
+          return (
+            <button key={asset.symbol} onClick={() => setRoute(`asset:${asset.symbol}`)}>
+              <span className="entity-name"><strong>{asset.symbol}</strong><small>{asset.name}</small></span>
+              <span>{asset.market}</span><span className="planned">예정</span><span className="planned">예정</span><span className="planned">예정</span>
+              <span>{assetReport?.date ?? "생성 전"}</span>
+            </button>
+          );
+        })}
+      </div>
     </Page>
   );
+}
+
+function AssetFilterBar({
+  market,
+  query,
+  onMarket,
+  onQuery
+}: {
+  market: "ALL" | "KR" | "US";
+  query: string;
+  onMarket: (market: "ALL" | "KR" | "US") => void;
+  onQuery: (query: string) => void;
+}) {
+  return (
+    <div className="asset-toolbar">
+      <div className="segmented-control">
+        {(["ALL", "KR", "US"] as const).map((value) => (
+          <button className={market === value ? "active" : ""} key={value} onClick={() => onMarket(value)}>{value}</button>
+        ))}
+      </div>
+      <input aria-label="종목 검색" placeholder="티커 또는 종목명 검색" value={query} onChange={(event) => onQuery(event.target.value)} />
+    </div>
+  );
+}
+
+function filterAssets(assets: Asset[], market: "ALL" | "KR" | "US", query: string) {
+  const needle = query.trim().toLowerCase();
+  return assets.filter((asset) => {
+    const matchesMarket = market === "ALL" || asset.market === market;
+    return matchesMarket && (!needle || asset.symbol.toLowerCase().includes(needle) || asset.name.toLowerCase().includes(needle));
+  });
 }
 
 function Page({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
@@ -407,135 +504,6 @@ function Page({ title, icon, children }: { title: string; icon: React.ReactNode;
       </header>
       {children}
     </section>
-  );
-}
-
-function StockChart({
-  candles,
-  asset,
-  isDemo,
-  expanded,
-  onExpand,
-  onClose
-}: {
-  candles: StockCandle[];
-  asset: Asset;
-  isDemo?: boolean;
-  expanded?: boolean;
-  onExpand?: () => void;
-  onClose?: () => void;
-}) {
-  const last = candles[candles.length - 1];
-  const prev = candles[candles.length - 2] ?? last;
-  const change = last.close / prev.close - 1;
-  const width = 1280;
-  const height = 700;
-  const left = 72;
-  const right = 34;
-  const top = 24;
-  const priceHeight = 472;
-  const volumeTop = 552;
-  const volumeHeight = 102;
-  const plotWidth = width - left - right;
-  const maxPrice = Math.max(...candles.map((candle) => candle.high));
-  const minPrice = Math.min(...candles.map((candle) => candle.low));
-  const priceRange = maxPrice - minPrice || 1;
-  const maxVolume = Math.max(...candles.map((candle) => candle.volume), 1);
-  const step = plotWidth / candles.length;
-  const candleWidth = Math.max(5, Math.min(12, step * 0.58));
-  const priceY = (value: number) => top + ((maxPrice - value) / priceRange) * priceHeight;
-  const volumeY = (value: number) => volumeTop + volumeHeight - (value / maxVolume) * volumeHeight;
-  const xFor = (index: number) => left + index * step + step / 2;
-  const linePath = (key: "ma5" | "ma20") =>
-    candles.map((candle, index) => `${index === 0 ? "M" : "L"} ${xFor(index).toFixed(2)} ${priceY(candle[key]).toFixed(2)}`).join(" ");
-  const ticks = Array.from({ length: 6 }, (_, index) => minPrice + (priceRange / 5) * index).reverse();
-
-  return (
-    <div className={expanded ? "stock-chart expanded-chart" : "stock-chart"}>
-      <div className="stock-chart-header">
-        <div>
-          <h2>{asset.symbol}</h2>
-          <span>{asset.name}{isDemo ? " · DEMO SERIES" : ""}</span>
-        </div>
-        <div className="chart-actions">
-          <div className="ohlc-strip">
-            <span>시 {formatPrice(last.open, asset)}</span>
-            <span>고 {formatPrice(last.high, asset)}</span>
-            <span>저 {formatPrice(last.low, asset)}</span>
-            <span>종 {formatPrice(last.close, asset)}</span>
-            <em className={change >= 0 ? "up" : "down"}>{formatPercent(change)}</em>
-          </div>
-          {onExpand && (
-            <button className="icon-button" onClick={onExpand} title="차트 확대">
-              <Expand size={18} />
-            </button>
-          )}
-          {onClose && (
-            <button className="icon-button" onClick={onClose} title="닫기">
-              <X size={18} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <svg className="candlestick-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${asset.symbol} candlestick chart with volume`}>
-        <rect x={left} y={top} width={plotWidth} height={priceHeight} className="chart-bg" />
-        <rect x={left} y={volumeTop} width={plotWidth} height={volumeHeight} className="chart-bg" />
-
-        {ticks.map((tick) => {
-          const y = priceY(tick);
-          return (
-            <g key={tick}>
-              <line x1={left} x2={width - right} y1={y} y2={y} className="grid-line" />
-              <text x={14} y={y + 4} className="axis-label">{formatPrice(tick, asset)}</text>
-            </g>
-          );
-        })}
-
-        {candles.filter((_, index) => index % 12 === 0 || index === candles.length - 1).map((candle) => {
-          const realIndex = candles.findIndex((item) => item.date === candle.date);
-          const x = xFor(realIndex);
-          return (
-            <g key={candle.date}>
-              <line x1={x} x2={x} y1={top} y2={volumeTop + volumeHeight} className="date-line" />
-              <text x={x} y={height - 12} className="date-label">{candle.date}</text>
-            </g>
-          );
-        })}
-
-        <path d={linePath("ma5")} className="ma-line ma5" />
-        <path d={linePath("ma20")} className="ma-line ma20" />
-
-        {candles.map((candle, index) => {
-          const x = xFor(index);
-          const rising = candle.close >= candle.open;
-          const yOpen = priceY(candle.open);
-          const yClose = priceY(candle.close);
-          const bodyY = Math.min(yOpen, yClose);
-          const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
-          const colorClass = rising ? "candle-up" : "candle-down";
-          const volY = volumeY(candle.volume);
-          return (
-            <g key={candle.date}>
-              <line x1={x} x2={x} y1={priceY(candle.high)} y2={priceY(candle.low)} className={`wick ${colorClass}`} />
-              <rect x={x - candleWidth / 2} y={bodyY} width={candleWidth} height={bodyHeight} rx={1.4} className={`candle-body ${colorClass}`} />
-              <rect
-                x={x - candleWidth / 2}
-                y={volY}
-                width={candleWidth}
-                height={volumeTop + volumeHeight - volY}
-                rx={1}
-                className={`volume-bar ${colorClass}`}
-              />
-            </g>
-          );
-        })}
-
-        <text x={left} y={535} className="volume-label">거래량</text>
-        <text x={width - right - 90} y={42} className="legend ma5-text">MA5</text>
-        <text x={width - right - 42} y={42} className="legend ma20-text">MA20</text>
-      </svg>
-    </div>
   );
 }
 
