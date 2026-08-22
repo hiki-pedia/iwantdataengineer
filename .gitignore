@@ -6,3 +6,8 @@ __pycache__/
 chartmaster/data/
 chartmaster/airflow/logs/*
 !chartmaster/airflow/logs/.gitkeep
+chartmaster/desktop/node_modules/
+chartmaster/desktop/dist/
+chartmaster/desktop/dist-electron/
+chartmaster/desktop/release/
+.DS_Store
