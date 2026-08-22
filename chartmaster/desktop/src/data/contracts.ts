@@ -41,7 +41,7 @@ export type DataCheck = {
 
 export type PipelineRun = {
   name: string;
-  status: "success" | "running" | "failed" | "queued" | "planned";
+  status: "success" | "running" | "failed" | "queued" | "planned" | "unavailable";
   lastRun: string | null;
   nextRun: string | null;
   rows: number;

@@ -26,6 +26,14 @@ class ObjectStorage(Protocol):
         """Read a dataframe from storage."""
         ...
 
+    def read_dataframe_csv_tail(self, relative_path: PurePosixPath, row_count: int) -> pd.DataFrame:
+        """Read the header and the last rows from a CSV file."""
+        ...
+
+    def read_text(self, relative_path: PurePosixPath) -> str:
+        """Read UTF-8 text from storage."""
+        ...
+
     def write_bytes(self, payload: bytes, relative_path: PurePosixPath) -> str:
         """Write bytes and return their storage URI."""
         ...
@@ -53,6 +61,12 @@ class LocalObjectStorage:
 
     def read_dataframe_csv(self, relative_path: PurePosixPath) -> pd.DataFrame:
         return pd.read_csv(self.absolute_path(relative_path))
+
+    def read_dataframe_csv_tail(self, relative_path: PurePosixPath, row_count: int) -> pd.DataFrame:
+        return self.read_dataframe_csv(relative_path).tail(row_count).reset_index(drop=True)
+
+    def read_text(self, relative_path: PurePosixPath) -> str:
+        return self.absolute_path(relative_path).read_text(encoding="utf-8")
 
     def write_bytes(self, payload: bytes, relative_path: PurePosixPath) -> str:
         path = self.absolute_path(relative_path)
@@ -112,6 +126,17 @@ class SshObjectStorage:
         remote_path = shlex.quote(str(self.remote_path(relative_path)))
         result = self.run_remote(f"cat {remote_path}")
         return pd.read_csv(io.BytesIO(result.stdout))
+
+    def read_dataframe_csv_tail(self, relative_path: PurePosixPath, row_count: int) -> pd.DataFrame:
+        if row_count < 1:
+            raise ValueError("row_count must be positive")
+        remote_path = shlex.quote(str(self.remote_path(relative_path)))
+        result = self.run_remote(f"(head -n 1 {remote_path}; tail -n {row_count} {remote_path})")
+        return pd.read_csv(io.BytesIO(result.stdout))
+
+    def read_text(self, relative_path: PurePosixPath) -> str:
+        remote_path = shlex.quote(str(self.remote_path(relative_path)))
+        return self.run_remote(f"cat {remote_path}").stdout.decode("utf-8")
 
     def write_bytes(self, payload: bytes, relative_path: PurePosixPath) -> str:
         remote_path = self.remote_path(relative_path)

@@ -1,6 +1,6 @@
 # ChartMaster Desktop
 
-Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 서버2 파일이나 PostgreSQL에 직접 연결하지 않고, 향후 서버1 FastAPI만 호출한다.
+Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 서버2 파일이나 PostgreSQL에 직접 연결하지 않고 서버1 FastAPI만 호출한다.
 
 ## 현재 상태
 
@@ -12,7 +12,25 @@ Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 �
 - 모델이 없으므로 예측 확률을 생성하지 않고 `model_not_ready`로 표시
 - `VITE_CHARTMASTER_API_URL`이 있으면 API provider, 없으면 Mock provider 사용
 
-현재 FastAPI는 아직 구현하지 않았다. API URL을 설정했는데 연결에 실패하면 Mock으로 자동 전환하지 않고 오류를 표시한다. 운영 연결 문제를 가짜 데이터로 숨기지 않기 위한 동작이다.
+FastAPI가 서버2의 실제 파일 저장소를 읽어 대시보드와 가격 데이터를 제공한다. API URL을 설정했는데 연결에 실패하면 Mock으로 자동 전환하지 않고 오류를 표시한다. 운영 연결 문제를 가짜 데이터로 숨기지 않기 위한 동작이다.
+
+## 실제 데이터 연결
+
+서버1에서 API 컨테이너를 실행한다.
+
+```bash
+cd /home/dnhs01/iwantdataengineer/chartmaster
+docker compose --env-file ../.env up -d --build chartmaster-api
+curl http://127.0.0.1:8000/health
+```
+
+로컬 PC의 `chartmaster/desktop/.env.local`에 서버1 주소를 지정한다.
+
+```dotenv
+VITE_CHARTMASTER_API_URL=http://192.168.0.5:8000
+```
+
+로컬 PC와 서버1이 서로 다른 네트워크에 있다면 `192.168.0.5` 대신 로컬 PC에서 접근 가능한 서버1의 WireGuard 주소를 사용한다.
 
 ## 실행 환경
 
