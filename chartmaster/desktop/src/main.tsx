@@ -19,7 +19,7 @@ import { FinancialChart } from "./components/FinancialChart";
 import "./styles.css";
 
 type AppRoute = `asset:${string}` | "dashboard" | "assets" | "data-status" | "data-check" | "events" | "predictions" | "pipelines" | "reports";
-const RANGE_OPTIONS = ["5Y", "1Y", "6M", "1M", "5D"] as const;
+const RANGE_OPTIONS = ["ALL", "5Y", "1Y", "6M", "1M", "5D"] as const;
 type ChartRange = (typeof RANGE_OPTIONS)[number];
 
 function App() {
@@ -228,10 +228,10 @@ function AssetPage({
   useEffect(() => {
     setCandles([]);
     setPriceError(null);
-    dataProvider.loadPrices(asset.symbol, range).then(setCandles).catch((reason: unknown) => {
+    dataProvider.loadPrices(asset.symbol, "ALL").then(setCandles).catch((reason: unknown) => {
       setPriceError(reason instanceof Error ? reason.message : "가격 데이터를 불러오지 못했습니다.");
     });
-  }, [asset.symbol, range]);
+  }, [asset.symbol]);
 
   const stepRange = (direction: "in" | "out") => {
     const current = RANGE_OPTIONS.indexOf(range);

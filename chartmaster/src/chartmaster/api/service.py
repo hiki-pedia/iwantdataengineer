@@ -29,7 +29,7 @@ from chartmaster.storage.local import ObjectStorage, get_object_storage, relativ
 
 
 QUALITY_REPORT_PATH = PurePosixPath("reports/data_quality")
-VALID_RANGES = {"5Y", "1Y", "6M", "1M", "5D"}
+VALID_RANGES = {"ALL", "5Y", "1Y", "6M", "1M", "5D"}
 
 
 class DashboardService:
@@ -247,6 +247,8 @@ class DashboardService:
 
     @staticmethod
     def _filter_range(dataframe: pd.DataFrame, range_name: str) -> pd.DataFrame:
+        if range_name == "ALL":
+            return dataframe
         if range_name == "5D":
             return dataframe.tail(5)
         end = dataframe["date"].max()

@@ -72,9 +72,12 @@ def test_dashboard_uses_real_storage_values_and_does_not_invent_predictions(tmp_
 
 
 def test_prices_filters_range_and_preserves_moving_averages(tmp_path) -> None:
-    prices = make_service(tmp_path).prices("TEST", "5D")
+    service = make_service(tmp_path)
+    prices = service.prices("TEST", "5D")
+    all_prices = service.prices("TEST", "ALL")
 
     assert len(prices) == 5
+    assert len(all_prices) == 300
     assert prices[0].date < prices[-1].date
     assert prices[-1].close == 399
     assert prices[-1].ma5 == 397
@@ -86,4 +89,4 @@ def test_prices_rejects_unknown_symbol_and_range(tmp_path) -> None:
     with pytest.raises(KeyError):
         service.prices("UNKNOWN", "5D")
     with pytest.raises(ValueError):
-        service.prices("TEST", "ALL")
+        service.prices("TEST", "MAX")

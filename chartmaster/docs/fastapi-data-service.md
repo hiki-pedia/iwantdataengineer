@@ -19,7 +19,7 @@ FastAPI와 Airflow는 같은 서버1에서 실행되지만 역할은 분리한�
 ```text
 GET /health
 GET /api/v1/dashboard
-GET /api/v1/assets/{symbol}/prices?range=5Y|1Y|6M|1M|5D
+GET /api/v1/assets/{symbol}/prices?range=ALL|5Y|1Y|6M|1M|5D
 GET /docs
 ```
 

@@ -11,7 +11,7 @@ class MockDashboardDataProvider implements DashboardDataProvider {
   async loadPrices(symbol: string, range: string): Promise<StockCandle[]> {
     const asset = mockAssets.find((candidate) => candidate.symbol === symbol);
     if (!asset) throw new Error(`Unknown asset: ${symbol}`);
-    const counts: Record<string, number> = { "5Y": 1260, "1Y": 252, "6M": 126, "1M": 22, "5D": 5 };
+    const counts: Record<string, number> = { "ALL": asset.rowCount, "5Y": 1260, "1Y": 252, "6M": 126, "1M": 22, "5D": 5 };
     return buildMockCandles(asset, counts[range] ?? counts["6M"]);
   }
 }

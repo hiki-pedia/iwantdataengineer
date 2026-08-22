@@ -88,7 +88,9 @@ export function FinancialChart({ asset, candles, forecastPoints, range, isDemo, 
       timeScale: {
         borderColor: "#273142",
         timeVisible: false,
-        rightOffset: forecastPoints.length > 0 ? 3 : 0
+        rightOffset: forecastPoints.length > 0 ? 3 : 0,
+        fixLeftEdge: true,
+        fixRightEdge: true
       },
       handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true },
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false }
@@ -124,6 +126,7 @@ export function FinancialChart({ asset, candles, forecastPoints, range, isDemo, 
     ma5Series.setData(candles.map((candle) => ({ time: candle.date as Time, value: candle.ma5 })));
     const ma20Series = chart.addSeries(LineSeries, { color: chartColors.ma20, lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
     ma20Series.setData(candles.map((candle) => ({ time: candle.date as Time, value: candle.ma20 })));
+    const candlesByDate = new Map(candles.map((candle) => [candle.date, candle]));
 
     if (forecastPoints.length > 0) {
       const last = candles[candles.length - 1];
@@ -160,7 +163,7 @@ export function FinancialChart({ asset, candles, forecastPoints, range, isDemo, 
         return;
       }
       const date = formatTime(param.time);
-      const source = candles.find((item) => item.date === date);
+      const source = candlesByDate.get(date);
       setHover({
         date,
         open: candle.open,
@@ -173,7 +176,12 @@ export function FinancialChart({ asset, candles, forecastPoints, range, isDemo, 
       });
     };
     chart.subscribeCrosshairMove(onCrosshairMove);
-    chart.timeScale().fitContent();
+    const visibleRange = chartVisibleRange(candles, range);
+    if (visibleRange) {
+      chart.timeScale().setVisibleRange(visibleRange);
+    } else {
+      chart.timeScale().fitContent();
+    }
 
     const resizeObserver = new ResizeObserver(([entry]) => {
       chart.applyOptions({ width: Math.floor(entry.contentRect.width) });
@@ -185,7 +193,7 @@ export function FinancialChart({ asset, candles, forecastPoints, range, isDemo, 
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       chart.remove();
     };
-  }, [asset.symbol, candles, expanded, forecastPoints]);
+  }, [asset.symbol, candles, expanded, forecastPoints, range]);
 
   return (
     <div className="financial-chart" ref={wrapperRef}>
@@ -219,4 +227,43 @@ function formatPrice(value: number, asset: Asset) {
 
 function formatCompact(value: number) {
   return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}
+
+function chartVisibleRange(candles: StockCandle[], range: string): { from: Time; to: Time } | null {
+  if (range === "ALL" || candles.length === 0) return null;
+
+  const lastIndex = candles.length - 1;
+  if (range === "5D") {
+    return {
+      from: candles[Math.max(0, candles.length - 5)].date as Time,
+      to: candles[lastIndex].date as Time
+    };
+  }
+
+  const lastDate = new Date(`${candles[lastIndex].date}T00:00:00Z`);
+  const offsets: Record<string, { years?: number; months?: number }> = {
+    "5Y": { years: 5 },
+    "1Y": { years: 1 },
+    "6M": { months: 6 },
+    "1M": { months: 1 }
+  };
+  const targetDate = subtractCalendarOffset(lastDate, offsets[range]);
+  const target = targetDate.toISOString().slice(0, 10);
+  const startIndex = candles.findIndex((candle) => candle.date >= target);
+
+  return {
+    from: candles[startIndex < 0 ? 0 : startIndex].date as Time,
+    to: candles[lastIndex].date as Time
+  };
+}
+
+function subtractCalendarOffset(date: Date, offset: { years?: number; months?: number } | undefined): Date {
+  if (!offset) return date;
+  const year = date.getUTCFullYear() - (offset.years ?? 0);
+  const month = date.getUTCMonth() - (offset.months ?? 0);
+  const day = date.getUTCDate();
+  const target = new Date(Date.UTC(year, month, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target;
 }
