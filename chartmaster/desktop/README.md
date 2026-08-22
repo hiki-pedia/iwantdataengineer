@@ -10,6 +10,7 @@ Electron과 React로 만든 ChartMaster 로컬 클라이언트다. Electron은 �
 - 차트 호버에서 날짜, OHLCV 표시
 - `ALL / 5Y / 1Y / 6M / 1M / 5D` 기간 버튼과 휠 단계 전환
 - 전체 이력을 유지한 상태에서 기간을 확대하고 과거 구간으로 이동
+- 데이터 검증 화면에서 종목별 오류·경고 코드, 설명, 영향 행 수와 검사일 표시
 - 모델이 없으므로 예측 확률을 생성하지 않고 `model_not_ready`로 표시
 - `VITE_CHARTMASTER_API_URL`이 있으면 API provider, 없으면 Mock provider 사용
 
