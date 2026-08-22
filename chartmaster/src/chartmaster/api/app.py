@@ -20,7 +20,7 @@ def create_app(service: DashboardService | None = None) -> FastAPI:
         origin.strip()
         for origin in os.getenv(
             "CHARTMASTER_API_CORS_ORIGINS",
-            "http://127.0.0.1:5173,http://localhost:5173,null",
+            "http://127.0.0.1:5173,http://localhost:5173,http://192.168.0.5:5173,http://10.0.0.1:5173,null",
         ).split(",")
         if origin.strip()
     ]

@@ -9,19 +9,17 @@
 추천 시리즈 구성은 다음과 같다.
 
 ```text
-Post 1. ChartMaster 프로젝트 개요와 설계
+Post 1. 주식 시장 데이터 기반 Data Engineering/MLOps 프로젝트 개요와 설계
 Post 2. Phase 1 - 시장 데이터 백필과 서버2 저장 구조
 Post 3. Phase 2 - Airflow 기반 장마감 후 일봉 자동 수집
 Post 4. Phase 3 - Electron Dashboard UI 설계와 Mock Prototype
-Post 5. Phase 4 - FastAPI 계약과 Mock-to-Live 연결 준비
-Post 6. Phase 5 - 종목 유니버스와 데이터 소스 검증
-Post 7. Phase 6 - 로컬 모델 학습과 평가 기준선
-Post 8. Phase 7 - 모델 학습 자동화와 모델 버전 관리
-Post 9. Phase 8 - 뉴스/RAG/감성 분석으로 외부 요인 결합
-Post 10. Phase 9 - 딥러닝 시계열 모델 실험
-Post 11. Phase 10 - AI 리포트 생성
-Post 12. Phase 11 - AWS S3/RDS로 로컬 데이터 구조 이전
-Post 13. Phase 12 - SageMaker Training Job과 운영 관찰성
+Post 5. Phase 4 - FastAPI 데이터 제공 계층과 서비스 경계 설계
+Post 6. Phase 5 - 데이터 품질, 백필, 재처리 전략
+Post 7. Phase 6 - 운영 안정성과 백업/복구 설계
+Post 8. Phase 7 - 머신러닝 모델 학습 파이프라인
+Post 9. Phase 8 - RAG와 외부 요인 분석 계층
+Post 10. Phase 9 - 로컬 운영 구조를 AWS로 이전
+Post 11. Phase 10 - SageMaker와 운영 관찰성
 ```
 
 ## Phase 글 기본 템플릿
@@ -313,7 +311,7 @@ Phase 2에서는 Airflow와 Docker Compose를 이용해 한국장/미국장 일�
 
 ## Post 4. Phase 3 - Electron Dashboard UI 설계와 Mock Prototype
 
-아직 진행 전이지만, 글의 방향은 미리 잡아둘 수 있다.
+구현을 완료했다. 실제 게시용 초안은 `04-phase3-electron-dashboard.md`에 분리했으며, 아래 항목은 작성 방향을 확인하는 체크리스트로 유지한다.
 
 ### 목표
 
@@ -336,6 +334,9 @@ Phase 2에서는 Airflow와 Docker Compose를 이용해 한국장/미국장 일�
 10. Settings 화면
 11. mock JSON 구조
 12. 나중에 FastAPI와 연결할 데이터 shape
+13. 전체 이력을 유지한 기간별 차트와 과거 탐색
+14. 종목별 데이터 품질 이슈 상세
+15. FastAPI 실데이터 연결과 컨테이너 UID 문제
 ```
 
 ### 포트폴리오 문장 후보
@@ -344,7 +345,7 @@ Phase 2에서는 Airflow와 Docker Compose를 이용해 한국장/미국장 일�
 데이터 품질 검증과 모델링이 계속 바뀔 수 있는 상황에서, 먼저 Electron Dashboard의 정보 구조와 화면 흐름을 mock data 기반으로 설계했습니다. 이를 통해 이후 FastAPI, 모델 결과, RAG 리포트가 어떤 형태로 앱에 연결되어야 하는지 API 계약을 역으로 정의할 수 있게 했습니다.
 ```
 
-## Post 5. Phase 4 - FastAPI 계약과 Mock-to-Live 연결 준비
+## Post 5. Phase 4 - FastAPI 데이터 제공 계층과 서비스 경계 설계
 
 ### 목표
 
@@ -364,21 +365,23 @@ Electron 앱이 직접 파일 저장소나 PostgreSQL에 접근하지 않도록 
 7. /models
 8. /reports
 9. mock provider와 live provider 분리
-10. 이후 server2/PostgreSQL 연결 지점
+10. 서버1 API 계층과 서버2 데이터 저장소의 연결 지점
+11. 환경변수, API URL, DB 접속 정보 관리
+12. 리눅스 기초 구조는 별도 인프라 프로젝트에서 다루고, 여기서는 서비스 경계에 집중한다는 설명
 ```
 
 ### 포트폴리오 문장 후보
 
 ```text
-Electron UI가 데이터 저장소 구조에 직접 의존하지 않도록 FastAPI 계층을 설계하고, mock data와 live data가 같은 응답 형태를 사용하도록 API contract를 정의했습니다.
+Electron UI가 데이터 저장소 구조에 직접 의존하지 않도록 FastAPI 계층을 설계하고, mock data와 live data가 같은 응답 형태를 사용하도록 API contract를 정의했습니다. 이를 통해 클라이언트, API, 데이터 저장소의 책임을 분리했습니다.
 ```
 
-## Post 6. Phase 5 - 종목 유니버스와 데이터 소스 검증
+## Post 6. Phase 5 - 데이터 품질, 백필, 재처리 전략
 
 ### 목표
 
 ```text
-국내장과 미국장 종목 수를 늘린 결과를 검증하고, 데이터 소스별 커버리지와 한계를 정리한다.
+종목 유니버스와 데이터 소스별 커버리지를 검증하고, 누락/중복/정정 데이터에 대응할 수 있는 백필과 재처리 전략을 정리한다.
 ```
 
 ### 포함할 내용
@@ -386,26 +389,60 @@ Electron UI가 데이터 저장소 구조에 직접 의존하지 않도록 FastA
 ```text
 1. 왜 종목 수를 늘렸는가
 2. 국내장/미국장 universe 선정 기준
-3. 섹터, 시가총액, 거래량, 상장 기간 기준 분류
-4. yfinance 커버리지 확인
-5. pykrx 등 국내 데이터 소스 검토
-6. 신규 상장 종목과 ETF를 experimental tier로 분리하는 이유
-7. 종목 수 증가 시 Airflow 실행 시간과 실패 처리
-8. raw/processed/metadata 구조가 유지되는지 검증
+3. yfinance, pykrx, Stooq 커버리지 비교
+4. 상장일과 최초 수집 가능일 차이
+5. 신규 상장 종목과 ETF를 experimental tier로 분리하는 이유
+6. 누락 데이터 확인
+7. 중복 데이터 확인
+8. 날짜 범위와 row count 검증
+9. 백필 재실행 절차
+10. 실패 데이터 재처리 절차
+11. idempotent ETL의 의미
+12. 종목 수 증가 시 Airflow 실행 시간과 실패 처리
 ```
 
 ### 포트폴리오 문장 후보
 
 ```text
-국내장과 미국장 종목 유니버스를 확장하면서 데이터 소스별 커버리지와 상장 이력 차이를 검증했습니다. 신규 상장 종목과 ETF는 experimental tier로 분리하고, 종목 수가 늘어나도 raw/processed/metadata 구조가 유지되도록 수집 구조를 점검했습니다.
+국내장과 미국장 종목 유니버스를 확장하면서 데이터 소스별 커버리지와 상장 이력 차이를 검증했습니다. 누락과 중복을 점검하고, 백필과 재처리를 반복해도 결과가 깨지지 않도록 idempotent ETL 관점에서 수집 구조를 정리했습니다.
 ```
 
-## Post 7. Phase 6 - 로컬 모델 학습과 평가 기준선
+## Post 7. Phase 6 - 운영 안정성과 백업/복구 설계
 
 ### 목표
 
 ```text
-processed feature 데이터를 이용해 첫 baseline 모델을 학습하고 평가 기준선을 만든다.
+데이터 수집이 한 번 성공하는 것을 넘어서, 장애가 나도 확인하고 복구할 수 있는 운영 절차를 만든다.
+```
+
+### 포함할 내용
+
+```text
+1. 왜 백업과 복구를 별도 Phase로 두는가
+2. 서버2 raw/processed 파일 저장소 백업
+3. PostgreSQL metadata DB backup
+4. PostgreSQL restore 테스트
+5. Airflow DAG 실패 확인
+6. Airflow 수동 재실행
+7. Docker 컨테이너 재시작 확인
+8. 서버 재부팅 후 자동 복구 확인
+9. 네트워크 일시 장애 시 확인할 항목
+10. 로그 확인 절차
+11. 운영 점검 체크리스트
+```
+
+### 포트폴리오 문장 후보
+
+```text
+데이터 파이프라인을 단순히 실행하는 데서 끝내지 않고, 파일 저장소와 PostgreSQL metadata DB의 백업/복구 절차, Airflow 실패 대응, 서버 재시작 후 자동 복구 확인 절차를 runbook 형태로 정리했습니다.
+```
+
+## Post 8. Phase 7 - 머신러닝 모델 학습 파이프라인
+
+### 목표
+
+```text
+processed feature 데이터를 이용해 첫 baseline 모델을 학습하고, 이후 Airflow 재학습으로 확장 가능한 모델 학습 파이프라인을 만든다.
 ```
 
 ### 포함할 내용
@@ -416,51 +453,25 @@ processed feature 데이터를 이용해 첫 baseline 모델을 학습하고 평
 3. naive baseline
 4. train/validation split
 5. time series split
-6. 모델 metric
-7. model artifact 저장
-8. model_versions/model_metrics 테이블
+6. leakage 방지
+7. 모델 metric
+8. model artifact 저장
+9. model_versions/model_metrics 테이블
+10. 이후 weekly_model_training DAG로 확장하는 구조
 ```
 
 ### 포트폴리오 문장 후보
 
 ```text
-processed feature 데이터를 기반으로 첫 baseline 모델을 학습하고, naive baseline과 비교해 모델이 실제로 의미 있는 신호를 학습하는지 검증했습니다. 모델 artifact와 metric을 분리 저장해 이후 재학습 자동화의 기준선을 만들었습니다.
+processed feature 데이터를 기반으로 첫 baseline 모델을 학습하고, naive baseline과 비교해 모델이 실제로 의미 있는 신호를 학습하는지 검증했습니다. 모델 artifact와 metric을 분리 저장해 이후 Airflow 기반 재학습 자동화로 확장할 수 있는 기준선을 만들었습니다.
 ```
 
-## Post 8. Phase 7 - 모델 학습 자동화와 모델 버전 관리
+## Post 9. Phase 8 - RAG와 외부 요인 분석 계층
 
 ### 목표
 
 ```text
-processed feature 데이터를 이용해 모델을 주기적으로 재학습하고, 모델 버전과 metric을 기록한다.
-```
-
-### 포함할 내용
-
-```text
-1. 첫 모델 문제 정의
-2. target_positive_5d_return
-3. baseline 모델
-4. train/validation split
-5. naive baseline
-6. model_versions 테이블
-7. model_metrics 테이블
-8. weekly_model_training DAG
-9. 모델 artifact 저장
-```
-
-### 포트폴리오 문장 후보
-
-```text
-processed feature 데이터를 기반으로 5거래일 뒤 상승 여부를 예측하는 baseline 모델을 학습하고, 모델 artifact와 validation metric을 version 단위로 기록하는 재학습 파이프라인을 구성했습니다.
-```
-
-## Post 9. Phase 8 - 뉴스/RAG/감성 분석으로 외부 요인 결합
-
-### 목표
-
-```text
-가격 데이터만으로 설명하기 어려운 외부 요인을 AI 계층으로 보강한다.
+가격 데이터만으로 설명하기 어려운 외부 요인을 RAG와 문서 분석 계층으로 보강한다.
 ```
 
 ### 포함할 내용
@@ -476,6 +487,8 @@ processed feature 데이터를 기반으로 5거래일 뒤 상승 여부를 예�
 8. 감성 점수
 9. 이벤트 분류
 10. 일별 종목 feature로 결합
+11. 급등/급락 이벤트 화면과 연결
+12. AI 리포트 흐름과 연결
 ```
 
 ### 포트폴리오 문장 후보
@@ -484,59 +497,7 @@ processed feature 데이터를 기반으로 5거래일 뒤 상승 여부를 예�
 주가 데이터만으로 설명하기 어려운 시장 변동 요인을 보강하기 위해 뉴스와 리포트를 수집하고, RAG 기반 요약과 감성 분석을 통해 일별 외부 요인 feature를 생성하는 계층을 설계했습니다.
 ```
 
-## Post 10. Phase 9 - 딥러닝 시계열 모델 실험
-
-### 목표
-
-```text
-rolling price window 기반 딥러닝 모델을 실험하고 baseline 모델과 비교한다.
-```
-
-### 포함할 내용
-
-```text
-1. 왜 딥러닝을 첫 모델로 쓰지 않는가
-2. rolling window 데이터셋
-3. LSTM/GRU 실험
-4. Transformer 계열 시계열 모델 검토
-5. overfitting 확인
-6. baseline 모델과 metric 비교
-```
-
-### 포트폴리오 문장 후보
-
-```text
-기본 ML 모델을 기준선으로 둔 뒤 LSTM/GRU 기반 시계열 모델을 실험하고, 과적합과 validation 안정성을 확인해 딥러닝 모델이 실제로 추가 가치를 주는지 비교했습니다.
-```
-
-## Post 11. Phase 10 - AI 리포트 생성
-
-### 목표
-
-```text
-예측 결과, 모델 metric, RAG 요약, 감성 피처를 조합해 사람이 읽을 수 있는 설명형 리포트를 생성한다.
-```
-
-### 포함할 내용
-
-```text
-1. 리포트의 목적
-2. 투자 추천과 분석 설명의 차이
-3. 모델 예측 결과 요약
-4. 모델 metric과 confidence 표현
-5. RAG 외부 요인 요약 결합
-6. hallucination 방지
-7. guardrail 설계
-8. reports 저장 구조
-```
-
-### 포트폴리오 문장 후보
-
-```text
-모델 예측 결과와 외부 요인 요약을 조합해 사람이 읽을 수 있는 일별 분석 리포트를 생성하되, 투자 추천이 아닌 근거 기반 설명으로 제한하는 guardrail을 설계했습니다.
-```
-
-## Post 12. Phase 11 - AWS S3/RDS로 로컬 데이터 구조 이전
+## Post 10. Phase 9 - 로컬 운영 구조를 AWS로 이전
 
 ### 목표
 
@@ -552,9 +513,11 @@ rolling price window 기반 딥러닝 모델을 실험하고 baseline 모델과 
 3. 서버2 PostgreSQL과 RDS의 대응 관계
 4. bucket/prefix/partition 설계
 5. storage_uri를 ssh://에서 s3://로 전환
-6. IAM 권한
-7. 보안 그룹
-8. 비용 관리
+6. 로컬과 AWS storage provider를 설정으로 전환하는 방법
+7. IAM 권한
+8. 보안 그룹
+9. 비용 관리
+10. 로컬 운영 구조와 managed service의 차이
 ```
 
 ### 포트폴리오 문장 후보
@@ -563,12 +526,12 @@ rolling price window 기반 딥러닝 모델을 실험하고 baseline 모델과 
 로컬 서버2에서 검증한 raw/processed/metadata 구조를 AWS S3/RDS로 이전하면서, 저장소 구현은 바뀌어도 데이터 계층과 메타데이터 계약은 유지되도록 설계했습니다.
 ```
 
-## Post 13. Phase 12 - SageMaker Training Job과 운영 관찰성
+## Post 11. Phase 10 - SageMaker와 운영 관찰성
 
 ### 목표
 
 ```text
-로컬 학습 코드를 SageMaker Training Job으로 확장하고 운영 로그와 실패 처리를 확인한다.
+로컬 학습 코드를 SageMaker Training Job으로 확장하고, CloudWatch 기반 로그와 실패 처리를 확인한다.
 ```
 
 ### 포함할 내용
@@ -583,12 +546,14 @@ rolling price window 기반 딥러닝 모델을 실험하고 baseline 모델과 
 7. job status polling
 8. CloudWatch 로그
 9. 실패 처리와 재시도
+10. 백업 정책
+11. 비용과 운영 복잡도 비교
 ```
 
 ### 포트폴리오 문장 후보
 
 ```text
-Airflow에서 SageMaker Training Job을 트리거하고, S3의 processed feature 데이터를 입력으로 사용해 모델을 학습한 뒤, 산출물과 평가 결과를 다시 S3/RDS에 기록하는 MLOps 흐름을 구현했습니다.
+Airflow에서 SageMaker Training Job을 트리거하고, S3의 processed feature 데이터를 입력으로 사용해 모델을 학습한 뒤, 산출물과 평가 결과를 다시 S3/RDS에 기록했습니다. CloudWatch 로그와 실패 처리까지 확인해 로컬 운영과 AWS 관리형 운영의 차이를 비교했습니다.
 ```
 
 ## 글 작성 원칙

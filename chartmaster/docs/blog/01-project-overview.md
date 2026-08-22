@@ -8,6 +8,8 @@ ChartMaster는 주식 시장 데이터를 이용해 데이터 엔지니어링과
 
 최종적으로는 로컬 홈서버 환경에서 만든 구조를 AWS 환경으로 확장한다. 서버2의 파일 저장소는 S3로, 서버2의 PostgreSQL은 RDS PostgreSQL로, 모델 학습은 SageMaker로 옮기는 것을 목표로 한다. 이후에는 뉴스, 리포트, 매크로 이벤트 같은 외부 요인을 RAG와 감성 분석으로 결합하고, Electron 데스크톱 애플리케이션에서 데이터와 모델 결과를 확인하는 방향으로 확장한다.
 
+리눅스 사용자, 권한, 내부망, SSH 같은 서버 기초 구조는 별도 인프라 프로젝트에서 자세히 다룬다. 이 프로젝트에서는 그 서버 환경 위에서 데이터 플랫폼의 서비스 경계, 저장소 분리, 자동화, 백업/복구, 운영 관찰성을 어떻게 설계하는지에 집중한다.
+
 정리하면 ChartMaster는 다음 질문에 답하기 위한 프로젝트다.
 
 ```text
@@ -603,37 +605,41 @@ Phase 1: 로컬 시장 데이터 기준선과 서버2 저장 구조
   과거 OHLCV 백필, 서버2 raw/processed 저장, PostgreSQL metadata, 기본 피처 생성
 
 Phase 2: Airflow 로컬 자동화
-  한국장/미국장 일봉 자동 수집, catchup, merge/dedup, 서버2 metadata 기록
+  한국장/미국장 일봉 자동 수집, catchup, 10일 overlap merge, dedup, 서버2 metadata 기록
 
 Phase 3: Electron Dashboard UI 설계와 Mock Prototype
-  Dashboard, Assets, Asset Detail, Pipelines, Models, Reports 화면 구성
+  Dashboard, Assets, Asset Detail, Events, Airflow/Pipelines 화면 우선 구현
+  Predictions, Reports, Settings는 mock 또는 placeholder로 시작
 
-Phase 4: FastAPI 계약과 Mock-to-Live 연결 준비
-  mock JSON과 동일한 API response contract 정의
+Phase 4: FastAPI 데이터 제공 계층과 서비스 경계 설계
+  Electron mock JSON과 동일한 API response contract 정의
+  mock provider와 live provider 분리
+  Electron이 서버2 파일 저장소나 PostgreSQL에 직접 접근하지 않도록 서비스 경계 설정
 
-Phase 5: 종목 유니버스와 데이터 소스 검증
-  국내장/미국장 종목 수 확대 결과 검증, yfinance/pykrx 등 소스 커버리지 비교
+Phase 5: 데이터 품질, 백필, 재처리 전략
+  종목 유니버스와 데이터 소스 coverage 검증
+  누락, 중복, 날짜 범위, row count 차이 확인
+  백필 재실행과 실패 데이터 재처리 절차 정리
 
-Phase 6: 로컬 모델 학습과 평가 기준선
-  baseline 모델, time series split, metric, model artifact 기록
+Phase 6: 운영 안정성과 백업/복구 설계
+  서버2 파일 저장소 백업, PostgreSQL backup/restore, Airflow 장애 대응 runbook 작성
+  재시작, 재실행, 로그 확인, 복구 테스트 절차 정리
 
-Phase 7: 모델 재학습 자동화
-  weekly_model_training DAG, 모델 버전, metric 기록
+Phase 7: 머신러닝 모델 학습 파이프라인
+  baseline 모델, time series split, leakage 방지, metric, model artifact 기록
+  이후 Airflow 기반 재학습으로 확장 가능한 구조 설계
 
-Phase 8: AI/RAG 외부 요인 분석
-  뉴스/리포트/매크로 문서 수집, RAG 요약, 감성 피처 생성
+Phase 8: RAG와 외부 요인 분석 계층
+  뉴스/리포트/매크로 문서 수집, RAG 요약, 감성/event feature 생성
+  급등/급락 이벤트 화면과 AI 리포트 흐름에 연결
 
-Phase 9: 딥러닝 실험
-  LSTM/GRU/Transformer 기반 시계열 모델 비교
+Phase 9: 로컬 운영 구조를 AWS로 이전
+  서버2 파일 저장소와 PostgreSQL 구조를 S3/RDS로 이전
+  IAM, security group, storage provider 전환, 비용 관리 기준 정리
 
-Phase 10: AI 리포트 생성
-  예측 결과, metric, RAG 요약을 설명형 리포트로 생성
-
-Phase 11: AWS S3/RDS 이전
-  서버2 파일 저장소와 PostgreSQL 구조를 AWS 관리형 서비스로 이전
-
-Phase 12: SageMaker 학습과 운영 관찰성
+Phase 10: SageMaker와 운영 관찰성
   Airflow에서 SageMaker Training Job 실행, CloudWatch/logging/backup 확인
+  로컬 Airflow 운영과 AWS managed training 운영 경험 비교
 ```
 
 ## 19. 포트폴리오에서 설명할 수 있는 문장
@@ -641,7 +647,7 @@ Phase 12: SageMaker 학습과 운영 관찰성
 이 프로젝트는 다음과 같이 설명할 수 있다.
 
 ```text
-ChartMaster는 주식 시장 데이터를 이용해 데이터 수집, 저장소 설계, Airflow 자동화, PostgreSQL 메타데이터 관리, AWS 전환, 모델 재학습, AI/RAG 분석을 단계적으로 학습하기 위한 Data Engineering/MLOps 포트폴리오 프로젝트입니다.
+ChartMaster는 주식 시장 데이터를 이용해 데이터 수집, 저장소 설계, Airflow 자동화, PostgreSQL 메타데이터 관리, 백업/복구, AWS 전환, 모델 학습, AI/RAG 분석을 단계적으로 학습하기 위한 Data Engineering/MLOps 포트폴리오 프로젝트입니다.
 ```
 
 조금 더 기술적으로 설명하면 다음과 같다.
@@ -658,7 +664,7 @@ Docker daemon socket 권한 문제, Airflow 컨테이너 UID 문제, Airflow sta
 
 ## 20. 현재 상태 요약
 
-현재 ChartMaster는 Phase 2 핵심 구현까지 완료한 상태다.
+현재 ChartMaster는 Phase 1과 Phase 3을 완료했고, Phase 2 자동 수집을 운영하고 있다. Phase 4의 핵심 FastAPI 조회 계층도 구현했으며, 다시 Phase 5 데이터 품질과 재처리의 남은 운영 검증을 진행하는 상태다.
 
 ```text
 Phase 1: 완료
@@ -667,11 +673,22 @@ Phase 1: 완료
   PostgreSQL metadata
   기본 피처 생성
 
-Phase 2: 대부분 완료
+Phase 2: 운영 중
   Airflow Docker Compose 실행
   한국장/미국장 DAG 자동 실행 성공
   서버 재시작 후 자동 실행 확인
-  실패/retry 검증은 데이터가 더 쌓인 뒤 진행 예정
+  catchup, 10일 overlap merge, dedup 구조 적용
+  실패/retry 강제 검증은 별도 운영 테스트로 남김
+
+Phase 3: 완료
+  Electron Dashboard와 종목별 대화형 차트 구현
+  Mock/Live Provider 계약과 데이터 검증 상세 화면 확정
+
+Phase 4: 핵심 연결 구현
+  Server 1 FastAPI에서 Server 2 실데이터와 품질 리포트 조회
+
+Phase 5: 진행 중
+  KRX 인증 원천 검증과 Airflow 정기 품질 Task 운영 검증 재개
 ```
 
-다음으로는 Phase 2 학습 기록을 정리한 뒤, AWS나 모델링으로 바로 넘어가지 않고 Phase 3에서 Electron Dashboard UI와 mock prototype을 먼저 만든다.
+다음으로는 AWS나 모델링으로 바로 넘어가지 않고 Phase 5의 데이터 품질 운영 검증을 마무리한다. Electron 화면과 핵심 API 계약이 마련됐으므로 이후 품질 Gate, 모델 결과와 RAG 리포트를 연결할 표시 위치도 명확해졌다.
