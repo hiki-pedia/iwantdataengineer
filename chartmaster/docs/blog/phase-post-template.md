@@ -442,28 +442,35 @@ Electron UI가 데이터 저장소 구조에 직접 의존하지 않도록 FastA
 ### 목표
 
 ```text
-processed feature 데이터를 이용해 첫 baseline 모델을 학습하고, 이후 Airflow 재학습으로 확장 가능한 모델 학습 파이프라인을 만든다.
+OHLCV와 기술적 지표를 이용해 차트 기반 예측 알고리즘을 비교하고, 이후 Airflow 재학습으로 확장 가능한 모델 학습 파이프라인을 만든다.
 ```
 
 ### 포함할 내용
 
 ```text
 1. 예측 문제 정의
-2. target_positive_5d_return
-3. naive baseline
-4. train/validation split
-5. time series split
-6. leakage 방지
-7. 모델 metric
-8. model artifact 저장
-9. model_versions/model_metrics 테이블
-10. 이후 weekly_model_training DAG로 확장하는 구조
+2. 주식 가치 분석이 아니라 차트 분석 프로젝트라는 관점
+3. 국내장 2020년 이전 장기 횡보 구간 문제
+4. 전체 기간 / 2020년 이후 / 최근 5년 dataset 비교
+5. RSI, MACD, MA, EMA, Bollinger Band, ATR, Momentum feature
+6. target_positive_5d_return
+7. naive baseline
+8. Logistic Regression
+9. Random Forest
+10. ARIMA, XGBoost, LSTM, GRU, CNN, Transformer, Reinforcement Learning, Ensemble 확장 계획
+11. time series split
+12. leakage 방지
+13. 예측 metric
+14. backtest metric
+15. model artifact 저장
+16. model_versions/model_metrics 테이블
+17. 이후 weekly_model_training DAG로 확장하는 구조
 ```
 
 ### 포트폴리오 문장 후보
 
 ```text
-processed feature 데이터를 기반으로 첫 baseline 모델을 학습하고, naive baseline과 비교해 모델이 실제로 의미 있는 신호를 학습하는지 검증했습니다. 모델 artifact와 metric을 분리 저장해 이후 Airflow 기반 재학습 자동화로 확장할 수 있는 기준선을 만들었습니다.
+OHLCV와 기술적 지표를 기반으로 차트 예측 알고리즘을 비교하고, 국내장 장기 횡보 구간의 영향을 확인하기 위해 전체 기간과 2020년 이후 데이터를 분리해 학습했습니다. naive baseline, Logistic Regression, Random Forest를 예측 metric과 backtest metric으로 함께 평가하고, 모델 artifact와 metric을 분리 저장해 이후 Airflow 기반 재학습 자동화로 확장할 수 있는 기준선을 만들었습니다.
 ```
 
 ## Post 9. Phase 8 - RAG와 외부 요인 분석 계층

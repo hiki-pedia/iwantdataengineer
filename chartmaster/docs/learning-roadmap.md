@@ -235,9 +235,12 @@ Phase 6: 완료
 
 목표:
 
-- processed feature 데이터를 이용해 첫 baseline 모델을 학습한다.
-- 다음 날 수익률, 5거래일 뒤 상승 여부, 변동성 확대 여부 등 문제 정의를 비교한다.
+- 차트 분석 관점에서 OHLCV와 기술적 지표 기반 알고리즘을 비교한다.
+- `5거래일 뒤 상승 여부`를 첫 문제로 정의한다.
+- 국내장 장기 횡보 구간을 고려해 전체 기간, 2020년 이후, 최근 5년 dataset을 분리한다.
 - naive baseline과 비교한다.
+- Logistic Regression, Random Forest를 첫 ML baseline으로 학습한다.
+- ARIMA, XGBoost, LSTM, GRU, CNN, Transformer, Reinforcement Learning, Ensemble은 후속 확장 후보로 둔다.
 - 모델 artifact와 평가 metric을 서버2에 저장한다.
 - PostgreSQL에는 모델 버전, metric, 산출물 위치를 기록한다.
 - 이후 Airflow 기반 재학습으로 확장할 수 있게 구조를 잡는다.
@@ -245,21 +248,30 @@ Phase 6: 완료
 산출물:
 
 - baseline model training script
+- 차트 기술적 지표 feature set
 - train/validation/test split 기준
+- 전체 기간 / 2020년 이후 / 최근 5년 dataset 비교 결과
 - model artifact 저장 구조
 - model metadata table
 - metric 기록
+- 간단한 backtest metric
 - 재학습 DAG 초안
 
 학습 포인트:
 
 - 기본 피처 엔지니어링
+- RSI, MACD, 이동평균선, Bollinger Band, ATR
 - time series split
 - backtesting leakage 방지
 - Accuracy, Precision, Recall, F1-score
+- ROC-AUC, 누적 수익률, Sharpe Ratio, MDD
 - 회귀 metric과 분류 metric 차이
 - 모델 artifact와 metadata 관리
 - 모델 학습 파이프라인의 재현성
+
+세부 계획:
+
+- `docs/chart-algorithm-plan.md`
 
 ## Phase 8: RAG와 외부 요인 분석 계층
 

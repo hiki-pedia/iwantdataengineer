@@ -626,8 +626,9 @@ Phase 6: 운영 안정성과 백업/복구 설계
   재시작, 재실행, 로그 확인, 복구 테스트 절차 정리
 
 Phase 7: 머신러닝 모델 학습 파이프라인
-  baseline 모델, time series split, leakage 방지, metric, model artifact 기록
-  이후 Airflow 기반 재학습으로 확장 가능한 구조 설계
+  OHLCV와 기술적 지표 기반 차트 예측 알고리즘 비교
+  전체 기간 / 2020년 이후 / 최근 5년 dataset 분리
+  naive baseline, Logistic Regression, Random Forest부터 시작
 
 Phase 8: RAG와 외부 요인 분석 계층
   뉴스/리포트/매크로 문서 수집, RAG 요약, 감성/event feature 생성

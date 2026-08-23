@@ -405,9 +405,13 @@ AWS는 초반에 바로 붙이지 않는다. 먼저 로컬 서버1/서버2 구�
 
 ### Phase 7: 머신러닝 모델 학습 파이프라인
 
-- processed feature 데이터로 baseline 모델을 학습한다.
+- OHLCV와 기술적 지표를 이용한 차트 기반 알고리즘 비교 실험으로 정의한다.
+- `positive_return_5d`를 첫 target으로 사용한다.
+- 전체 기간, 2020년 이후, 최근 5년 dataset을 분리해 국내장 장기 횡보 구간의 영향을 비교한다.
 - time series split을 적용한다.
-- naive baseline과 비교한다.
+- naive baseline, Logistic Regression, Random Forest를 1차 baseline으로 비교한다.
+- ARIMA, XGBoost, LSTM, GRU, CNN, Transformer, Reinforcement Learning, Ensemble은 후속 확장 후보로 둔다.
+- 예측 성능과 투자 성능을 함께 평가한다.
 - 모델 artifact와 metric을 서버2 파일 저장소와 PostgreSQL metadata에 기록한다.
 - 이후 Airflow 기반 재학습으로 확장할 수 있게 구조를 잡는다.
 

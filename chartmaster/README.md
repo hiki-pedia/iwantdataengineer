@@ -65,7 +65,7 @@ US market:
 4. FastAPI service boundary: define API contracts and keep Electron away from direct file/DB access.
 5. Data quality and reprocessing: validate coverage, duplicates, backfills, and idempotent reruns.
 6. Operational reliability: document backups, restore drills, Airflow recovery, logs, and health checks.
-7. Machine learning pipeline: train baseline models and record artifacts/metrics with reproducible metadata.
+7. Chart algorithm pipeline: compare technical-indicator-based baselines, ML models, later deep learning models, and backtest metrics.
 8. RAG external factor layer: collect news/reports/events and connect external explanations to events/reports.
 9. AWS S3/RDS migration: move the proven local storage/metadata pattern to managed AWS services.
 10. SageMaker and observability: run managed training and inspect CloudWatch logs, retry behavior, backup policy, and cost.
@@ -217,3 +217,11 @@ Phase 6 references:
 - `docs/backup-restore-runbook.md`
 - `docs/failure-drill-report.md`
 - `docs/blog/06-phase6-operational-reliability.md`
+
+## Phase 7 Chart Algorithm Plan
+
+Phase 7 starts from chart-based prediction rather than fundamental stock valuation. The first implementation will create technical indicators, define `positive_return_5d`, compare full-history / post-2020 / recent-5-year datasets, and evaluate naive baseline, Logistic Regression, and Random Forest before expanding to ARIMA, XGBoost, LSTM, Transformer, Ensemble, and reinforcement learning.
+
+Reference:
+
+- `docs/chart-algorithm-plan.md`
