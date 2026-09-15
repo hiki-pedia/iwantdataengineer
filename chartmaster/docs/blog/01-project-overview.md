@@ -186,7 +186,7 @@ Frontend
 dataset_type: raw_market_data
 provider: yfinance
 symbol: 005930.KS
-storage_uri: ssh://dnhs02@192.168.0.9/home/dnhs02/iwantdataengineer/chartmaster/raw/...
+storage_uri: ssh://dnhs02@192.168.219.102/home/dnhs02/iwantdataengineer/chartmaster/raw/...
 row_count: 6640
 start_date: 2000-01-04
 end_date: 2026-07-27

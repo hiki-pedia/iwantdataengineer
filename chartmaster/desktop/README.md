@@ -29,10 +29,10 @@ curl http://127.0.0.1:8000/health
 로컬 PC의 `chartmaster/desktop/.env.local`에 서버1 주소를 지정한다.
 
 ```dotenv
-VITE_CHARTMASTER_API_URL=http://192.168.0.5:8000
+VITE_CHARTMASTER_API_URL=http://192.168.219.101:8000
 ```
 
-로컬 PC와 서버1이 서로 다른 네트워크에 있다면 `192.168.0.5` 대신 로컬 PC에서 접근 가능한 서버1의 WireGuard 주소를 사용한다.
+로컬 PC와 서버1이 서로 다른 네트워크에 있다면 `192.168.219.101` 대신 로컬 PC에서 접근 가능한 서버1의 WireGuard 주소를 사용한다.
 
 ## 실행 환경
 

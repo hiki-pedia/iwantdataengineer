@@ -64,7 +64,7 @@ docker compose --env-file ../.env exec -T airflow-scheduler \
 Server 2 접근:
 
 ```bash
-ssh -o BatchMode=yes dnhs02@192.168.0.9 hostname
+ssh -o BatchMode=yes dnhs02@192.168.219.102 hostname
 ```
 
 정상 기준:
@@ -76,7 +76,7 @@ dnhs02-System-Product-Name
 Server 2 데이터 저장소:
 
 ```bash
-ssh dnhs02@192.168.0.9 \
+ssh dnhs02@192.168.219.102 \
   'cd /home/dnhs02/iwantdataengineer/chartmaster && du -sh raw curated processed reports backups'
 ```
 
@@ -118,7 +118,7 @@ assets=29 passed=29 failed=0 errors=0 warnings=1
 디스크 사용량:
 
 ```bash
-ssh dnhs02@192.168.0.9 'df -h /home/dnhs02 && du -sh /home/dnhs02/iwantdataengineer/chartmaster/*'
+ssh dnhs02@192.168.219.102 'df -h /home/dnhs02 && du -sh /home/dnhs02/iwantdataengineer/chartmaster/*'
 ```
 
 최근 DAG run:
@@ -145,7 +145,7 @@ docker compose --env-file ../.env exec -T airflow-scheduler \
 Server 2 DB 컨테이너 확인:
 
 ```bash
-ssh dnhs02@192.168.0.9 'docker ps --format "{{.Names}} {{.Status}}" | rg chartmaster-postgres'
+ssh dnhs02@192.168.219.102 'docker ps --format "{{.Names}} {{.Status}}" | rg chartmaster-postgres'
 ```
 
 ## 현재 확인 결과

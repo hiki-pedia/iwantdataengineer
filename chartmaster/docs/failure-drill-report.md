@@ -41,7 +41,7 @@ PASS
 명령:
 
 ```bash
-ssh -o BatchMode=yes dnhs02@192.168.0.9 hostname
+ssh -o BatchMode=yes dnhs02@192.168.219.102 hostname
 ```
 
 결과:

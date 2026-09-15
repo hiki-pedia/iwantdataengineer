@@ -9,7 +9,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from chartmaster.api.schemas import DashboardResponse, HealthResponse, PriceCandleResponse
+from chartmaster.api.schemas import DashboardResponse, HealthResponse, PredictionResponse, PriceCandleResponse
 from chartmaster.api.service import DashboardService, VALID_RANGES
 
 
@@ -20,7 +20,7 @@ def create_app(service: DashboardService | None = None) -> FastAPI:
         origin.strip()
         for origin in os.getenv(
             "CHARTMASTER_API_CORS_ORIGINS",
-            "http://127.0.0.1:5173,http://localhost:5173,http://192.168.0.5:5173,http://10.0.0.1:5173,null",
+            "http://127.0.0.1:5173,http://localhost:5173,http://192.168.219.101:5173,http://10.0.0.1:5173,null",
         ).split(",")
         if origin.strip()
     ]
@@ -39,6 +39,10 @@ def create_app(service: DashboardService | None = None) -> FastAPI:
     @application.get("/api/v1/dashboard", response_model=DashboardResponse)
     def dashboard() -> DashboardResponse:
         return application.state.dashboard_service.dashboard()
+
+    @application.get("/api/v1/predictions/direction-5d", response_model=list[PredictionResponse])
+    def predictions() -> list[PredictionResponse]:
+        return application.state.dashboard_service.predictions()
 
     @application.get("/api/v1/assets/{symbol}/prices", response_model=list[PriceCandleResponse])
     def prices(symbol: str, range_name: str = Query("5Y", alias="range")) -> list[PriceCandleResponse]:

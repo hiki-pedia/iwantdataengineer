@@ -219,30 +219,76 @@ positive_return_5d
 
 ## Phase 7 구현 순서
 
-Phase 7은 너무 커질 수 있으므로 1차 목표를 좁힌다.
+Phase 7은 너무 커질 수 있으므로 목표를 "최고 성능 연구"가 아니라 "자동 학습 파이프라인에 올릴 기준 모델 선정"으로 좁힌다.
 
 ```text
 Phase 7-1: 기술적 지표 feature 생성
 Phase 7-2: 5거래일 뒤 상승 여부 target 생성
 Phase 7-3: 전체 기간 / 2020년 이후 / 최근 5년 dataset 분리
-Phase 7-4: Naive baseline
-Phase 7-5: Logistic Regression
-Phase 7-6: Random Forest
-Phase 7-7: metric 저장
-Phase 7-8: 간단한 backtest
+Phase 7-4: Random Forest / XGBoost tabular baseline
+Phase 7-5: LSTM sequence model
+Phase 7-6: Transformer-lite sequence model
+Phase 7-7: XGBoost + LSTM + Transformer-lite Ensemble
+Phase 7-8: metric, artifact, prediction 결과 저장
 ```
 
 후속 확장:
 
 ```text
 ARIMA
-XGBoost
-LSTM / GRU
 CNN / CNN-LSTM
-Transformer
-Ensemble
+GRU
 Reinforcement Learning
+Backtesting 고도화
 ```
+
+## Phase 7 1차 실행 결과
+
+실행 기준:
+
+```text
+dataset window: all_history
+target: 5거래일 뒤 수익률이 양수인지 여부
+train: 2023-12-31 이전
+validation: 2024-01-01 ~ 2025-12-31
+test: 2026-01-01 이후
+asset_count: 29
+sequence_length: 60
+```
+
+모델 비교:
+
+| Model | Test Accuracy | Test F1 | Test ROC-AUC | 비고 |
+| --- | ---: | ---: | ---: | --- |
+| Random Forest | 0.5494 | 0.6715 | 0.5252 | 종목별 tabular baseline |
+| XGBoost | 0.5555 | 0.6817 | 0.5417 | tabular 모델 중 가장 안정적 |
+| LSTM | 0.5673 | 0.7238 | 0.5091 | 60일 sequence 기반 |
+| Transformer-lite | 0.5733 | 0.7271 | 0.5133 | 현재 F1 기준 1위 |
+| Ensemble | 0.5655 | 0.7208 | 0.5044 | 단순 평균 앙상블, Transformer 단독보다 낮음 |
+
+앙상블 상세 결과:
+
+```text
+version: 20260915T022850Z
+aligned_test_rows: 2739
+decision_threshold: 0.30
+always_positive_f1: 0.7225
+ensemble_f1_lift_vs_always_positive: -0.0017
+```
+
+해석:
+
+현재 결과는 예측력이 강하다고 보기 어렵다. 특히 ROC-AUC가 0.5 근처이므로, 모델이 상승/하락 순위를 안정적으로 구분한다고 말하기 어렵다.
+
+다만 프로젝트 목적은 알고리즘 연구 자체가 아니라 Airflow/AWS 자동화 대상이 되는 모델 학습 워크로드를 만드는 것이다. 따라서 Phase 7의 결론은 다음과 같다.
+
+```text
+운영 후보 모델: Transformer-lite
+비교 기준 모델: XGBoost
+보류 모델: 단순 평균 Ensemble
+```
+
+Transformer-lite는 F1 기준으로 가장 높지만, ROC-AUC가 약하므로 "정확한 투자 모델"이 아니라 "자동 학습, 모델 버전 저장, 지표 비교, UI 예측선 연결을 위한 기준 모델"로 사용한다.
 
 ## 평가 지표
 
@@ -312,14 +358,16 @@ all
 - `positive_return_5d` target을 생성했다.
 - 전체 기간, 2020년 이후, 최근 5년 dataset을 비교했다.
 - naive baseline을 평가했다.
-- Logistic Regression을 학습했다.
 - Random Forest를 학습했다.
+- XGBoost를 학습했다.
+- LSTM을 학습했다.
+- Transformer-lite를 학습했다.
+- 단순 평균 Ensemble을 학습했다.
 - 예측 metric을 저장했다.
-- 간단한 backtest metric을 계산했다.
 - 모델 artifact와 metric을 Server 2에 저장했다.
 - PostgreSQL metadata에 모델 버전과 metric을 기록했다.
-- Phase 7 블로그에 결과와 한계를 정리했다.
+- Phase 7 결과와 한계를 문서에 정리했다.
 
 ## 포트폴리오 설명 문장
 
-OHLCV와 RSI, MACD, 이동평균선, Bollinger Band, ATR 등 기술적 지표를 기반으로 차트 예측 알고리즘을 단계적으로 비교했습니다. 국내장 장기 횡보 구간의 영향을 확인하기 위해 전체 기간, 2020년 이후, 최근 5년 데이터셋을 분리해 학습했고, naive baseline, Logistic Regression, Random Forest를 예측 성능과 백테스트 성능으로 함께 평가했습니다. 이후 XGBoost, LSTM, Transformer, Ensemble로 확장할 수 있도록 모델 artifact와 metric 저장 구조를 설계했습니다.
+OHLCV와 RSI, MACD, 이동평균선, Bollinger Band, ATR 등 기술적 지표를 기반으로 5거래일 뒤 상승 여부를 예측하는 차트 기반 모델을 비교했습니다. Random Forest와 XGBoost를 tabular baseline으로 두고, LSTM과 Transformer-lite로 60거래일 sequence 모델을 실험했으며, XGBoost/LSTM/Transformer-lite 단순 평균 Ensemble까지 비교했습니다. 최종적으로 Transformer-lite가 F1 기준 가장 높았지만 ROC-AUC는 0.5 근처에 머물러, 이 모델을 투자 판단 모델이 아니라 Airflow/AWS 자동 학습, 모델 버전 관리, metric 저장, UI 예측선 연결을 위한 기준 워크로드로 정의했습니다.

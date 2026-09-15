@@ -43,7 +43,7 @@ Compose의 `restart: unless-stopped` 때문에 Docker 서비스가 부팅할 때
 로컬 PC에서 `chartmaster/desktop/.env.local`을 만든다.
 
 ```dotenv
-VITE_CHARTMASTER_API_URL=http://192.168.0.5:8000
+VITE_CHARTMASTER_API_URL=http://192.168.219.101:8000
 ```
 
 Vite 개발 서버의 출처는 기본 CORS 허용 목록에 포함되어 있다. API는 아직 인증이 없으므로 인터넷에 직접 공개하지 않고 LAN 또는 WireGuard 내부에서만 사용한다.

@@ -1,0 +1,151 @@
+{
+  "model_name": "lstm_direction_5d",
+  "algorithm": "lstm",
+  "version": "20260914T032530Z",
+  "window": "all_history",
+  "generated_at": "2026-09-14T03:26:53.208545+00:00",
+  "feature_columns": [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volume_change_1d",
+    "volume_ratio_20",
+    "moving_average_5",
+    "moving_average_20",
+    "moving_average_60",
+    "moving_average_120",
+    "price_to_ma20",
+    "price_to_ma60",
+    "volatility_5",
+    "volatility_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_histogram",
+    "bollinger_percent_b_20",
+    "bollinger_bandwidth_20",
+    "atr_14",
+    "momentum_10",
+    "momentum_20",
+    "breakout_high_20",
+    "breakdown_low_20",
+    "breakout_high_60",
+    "breakdown_low_60"
+  ],
+  "target_column": "target_positive_5d_return",
+  "sequence_length": 60,
+  "hidden_size": 32,
+  "epochs": 3,
+  "asset_count": 26,
+  "row_count": 227747,
+  "train_row_count": 210928,
+  "validation_row_count": 12461,
+  "test_row_count": 4358,
+  "train_sequence_count": 209453,
+  "validation_sequence_count": 10927,
+  "test_sequence_count": 2824,
+  "decision_threshold": 0.34,
+  "threshold_selection_metric": "validation_f1",
+  "default_threshold_validation_metrics": {
+    "row_count": 10927.0,
+    "positive_ratio": 0.5428754461425825,
+    "predicted_positive_ratio": 0.40825478173332114,
+    "threshold": 0.5,
+    "accuracy": 0.5049876452823282,
+    "precision": 0.5586191436897556,
+    "recall": 0.4200944032366824,
+    "f1": 0.47955354565572983,
+    "roc_auc": 0.5257653810249899
+  },
+  "default_threshold_test_metrics": {
+    "row_count": 2824.0,
+    "positive_ratio": 0.5697592067988668,
+    "predicted_positive_ratio": 0.3101983002832861,
+    "threshold": 0.5,
+    "accuracy": 0.47556657223796034,
+    "precision": 0.5730593607305936,
+    "recall": 0.3119950279676818,
+    "f1": 0.4040241448692153,
+    "roc_auc": 0.5091176944501992
+  },
+  "validation_metrics": {
+    "row_count": 10927.0,
+    "positive_ratio": 0.5428754461425825,
+    "predicted_positive_ratio": 1.0,
+    "threshold": 0.34,
+    "accuracy": 0.5428754461425825,
+    "precision": 0.5428754461425825,
+    "recall": 1.0,
+    "f1": 0.7037190817960733,
+    "roc_auc": 0.5257653810249899
+  },
+  "test_metrics": {
+    "row_count": 2824.0,
+    "positive_ratio": 0.5697592067988668,
+    "predicted_positive_ratio": 0.9968130311614731,
+    "threshold": 0.34,
+    "accuracy": 0.5672804532577904,
+    "precision": 0.5687388987566607,
+    "recall": 0.9950279676817899,
+    "f1": 0.7237793851717902,
+    "roc_auc": 0.5091176944501992
+  },
+  "test_baselines": {
+    "always_positive": {
+      "row_count": 2824.0,
+      "positive_ratio": 0.5697592067988668,
+      "predicted_positive_ratio": 1.0,
+      "accuracy": 0.5697592067988668,
+      "precision": 0.5697592067988668,
+      "recall": 1.0,
+      "f1": 0.7259192420482743
+    },
+    "always_negative": {
+      "row_count": 2824.0,
+      "positive_ratio": 0.5697592067988668,
+      "predicted_positive_ratio": 0.0,
+      "accuracy": 0.4302407932011331,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  },
+  "test_lift_vs_always_positive": {
+    "accuracy_lift": -0.002478753541076406,
+    "precision_lift": -0.0010203080422060973,
+    "recall_lift": -0.0049720323182100845,
+    "f1_lift": -0.002139856876484103
+  },
+  "latest_prediction": {
+    "as_of": "2026-09-03",
+    "symbol": "XOM",
+    "horizon_trading_days": 5,
+    "positive_probability": 0.49897244572639465,
+    "predicted_positive": true,
+    "threshold": 0.34
+  },
+  "training_summary": {
+    "epochs": 3,
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_loss": 0.6719076336883917,
+        "validation_f1": 0.46669286696797013,
+        "validation_roc_auc": 0.5250199457718001
+      },
+      {
+        "epoch": 2.0,
+        "train_loss": 0.6710551493051575,
+        "validation_f1": 0.47363821730265077,
+        "validation_roc_auc": 0.5249878671658847
+      },
+      {
+        "epoch": 3.0,
+        "train_loss": 0.670685747920013,
+        "validation_f1": 0.47955354565572983,
+        "validation_roc_auc": 0.5257653810249899
+      }
+    ]
+  }
+}
