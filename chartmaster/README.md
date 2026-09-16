@@ -59,18 +59,16 @@ US market:
 
 ## Learning Phases
 
-1. Local baseline and server2 storage: collect historical OHLCV data, store raw/processed files, and record PostgreSQL metadata.
-2. Airflow local automation: schedule Korean and US market collection with catchup, retry, and deduplication.
-3. Electron dashboard mock prototype: define screens, navigation, mock data, and visual structure before modeling is stable.
-4. FastAPI contract: define API response shapes that can later replace mock data with live server2/PostgreSQL data.
-5. Data universe validation: verify asset coverage, source limitations, and data quality when ready.
-6. Local modeling: train baseline models and record artifacts/metrics.
-7. Airflow model retraining: automate weekly training and model versioning.
-8. AI/RAG layer: summarize external factors and generate sentiment features.
-9. Deep learning experiments: compare LSTM/GRU/Transformer models with baselines.
-10. AI reports: combine predictions, metrics, and external factors into explanatory reports.
-11. AWS migration: move server2 storage/metadata patterns to S3 and RDS.
-12. SageMaker and observability: run managed training and inspect logs/retry/backup.
+1. Local baseline and server2 storage: backfill OHLCV data, store raw/processed files, and record PostgreSQL metadata.
+2. Airflow local automation: schedule Korean and US market collection with catchup, overlap merge, retry, and deduplication.
+3. Electron dashboard mock prototype: build the desktop information structure before modeling and RAG are stable.
+4. FastAPI service boundary: define API contracts and keep Electron away from direct file/DB access.
+5. Data quality and reprocessing: validate coverage, duplicates, backfills, and idempotent reruns.
+6. Operational reliability: document backups, restore drills, Airflow recovery, logs, and health checks.
+7. Chart algorithm pipeline: compare technical-indicator-based baselines, ML models, later deep learning models, and backtest metrics.
+8. RAG external factor layer: collect news/reports/events and connect external explanations to events/reports.
+9. AWS S3/RDS migration: move the proven local storage/metadata pattern to managed AWS services.
+10. SageMaker and observability: run managed training and inspect CloudWatch logs, retry behavior, backup policy, and cost.
 
 ## Notes
 
@@ -155,3 +153,75 @@ Scheduled DAGs:
 - `daily_us_market_data_etl`: US market daily OHLCV, 17:30 America/New_York on weekdays.
 
 Both DAGs use Airflow catchup. If server1 is off at the scheduled time, Airflow creates the missed run when the scheduler comes back. Each run fetches a 10-day overlap window and merges by date, so existing backfilled history is not replaced by a short daily file.
+
+## Phase 5 Data Quality
+
+Run a read-only quality check without saving a report:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src .venv/bin/python \
+  -m chartmaster.pipelines.local_market_data_quality \
+  --tier all \
+  --no-write-report
+```
+
+Rebuild processed features from stored raw data. The command is a dry run unless `--write` is explicitly provided:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src .venv/bin/python \
+  -m chartmaster.pipelines.local_market_data_reprocess \
+  --market KR \
+  --tier all
+```
+
+The scheduled KR and US DAGs run their market quality check after collection. Error-level findings fail the quality task, while provider anomalies and long market gaps remain visible as warnings in server2 JSON reports.
+
+Korean market runs add a curation step between collection and validation. It preserves Yahoo raw files, stores pykrx's Naver-backed comparison rows separately, repairs confirmed OHLC anomalies and missing sessions in the curated layer, and regenerates features from that canonical result.
+
+Latest Phase 5 verification:
+
+- 29 assets passed the quality check.
+- Error count: 0.
+- Warning count: 1.
+- Korean manual validation run: collect, curate, and validate tasks succeeded.
+- Recent KR and US scheduled Airflow runs succeeded.
+- KRX-authenticated raw-source verification is tracked as a later enhancement, not a Phase 5 blocker.
+
+Phase 5 references:
+
+- `docs/asset-universe.md`
+- `docs/data-source-coverage.md`
+- `docs/data-quality-strategy.md`
+- `docs/backfill-reprocessing-runbook.md`
+
+## Phase 6 Operational Reliability
+
+Phase 6 defines normal operating state, backup targets, restore checks, and failure-drill order before moving the platform to AWS.
+
+Current Phase 6 verification:
+
+- Server 1 Airflow/FastAPI containers are running, with webserver/API health checks healthy.
+- Server 2 SSH and `chartmaster-postgres` are reachable.
+- Server 2 file storage backup was created and tar listing was verified.
+- ChartMaster PostgreSQL metadata dump was created with the Server 2 PostgreSQL container's `pg_dump`.
+- The metadata dump was restored into a temporary database with `ON_ERROR_STOP=1`, then the temporary database was dropped.
+- FastAPI container restart drill passed, and `/health` plus Docker health recovered.
+- Airflow webserver and scheduler restart drills passed.
+- A read-only quality failure drill returned non-zero exit status without overwriting the live quality report.
+- Server 2 SSH failure drill returned non-zero exit status without changing the real SSH configuration.
+- PostgreSQL shutdown drill is intentionally deferred because it can affect live metadata writes.
+
+Phase 6 references:
+
+- `docs/operation-runbook.md`
+- `docs/backup-restore-runbook.md`
+- `docs/failure-drill-report.md`
+- `docs/blog/06-phase6-operational-reliability.md`
+
+## Phase 7 Chart Algorithm Plan
+
+Phase 7 starts from chart-based prediction rather than fundamental stock valuation. The first implementation will create technical indicators, define `positive_return_5d`, compare full-history / post-2020 / recent-5-year datasets, and evaluate naive baseline, Logistic Regression, and Random Forest before expanding to ARIMA, XGBoost, LSTM, Transformer, Ensemble, and reinforcement learning.
+
+Reference:
+
+- `docs/chart-algorithm-plan.md`

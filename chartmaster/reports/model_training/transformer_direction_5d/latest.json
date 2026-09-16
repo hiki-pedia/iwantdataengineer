@@ -1,0 +1,154 @@
+{
+  "model_name": "transformer_direction_5d",
+  "algorithm": "transformer",
+  "version": "20260914T033318Z",
+  "window": "all_history",
+  "generated_at": "2026-09-14T03:39:17.508577+00:00",
+  "feature_columns": [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volume_change_1d",
+    "volume_ratio_20",
+    "moving_average_5",
+    "moving_average_20",
+    "moving_average_60",
+    "moving_average_120",
+    "price_to_ma20",
+    "price_to_ma60",
+    "volatility_5",
+    "volatility_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_histogram",
+    "bollinger_percent_b_20",
+    "bollinger_bandwidth_20",
+    "atr_14",
+    "momentum_10",
+    "momentum_20",
+    "breakout_high_20",
+    "breakdown_low_20",
+    "breakout_high_60",
+    "breakdown_low_60"
+  ],
+  "target_column": "target_positive_5d_return",
+  "sequence_length": 60,
+  "hidden_size": 32,
+  "model_size": 32,
+  "num_heads": 4,
+  "num_layers": 1,
+  "epochs": 3,
+  "asset_count": 26,
+  "row_count": 227747,
+  "train_row_count": 210928,
+  "validation_row_count": 12461,
+  "test_row_count": 4358,
+  "train_sequence_count": 209453,
+  "validation_sequence_count": 10927,
+  "test_sequence_count": 2824,
+  "decision_threshold": 0.37,
+  "threshold_selection_metric": "validation_f1",
+  "default_threshold_validation_metrics": {
+    "row_count": 10927.0,
+    "positive_ratio": 0.5428754461425825,
+    "predicted_positive_ratio": 0.5670357829230347,
+    "threshold": 0.5,
+    "accuracy": 0.5231994142948659,
+    "precision": 0.5582633957391866,
+    "recall": 0.5831085637221848,
+    "f1": 0.5704155672823219,
+    "roc_auc": 0.5231922245914153
+  },
+  "default_threshold_test_metrics": {
+    "row_count": 2824.0,
+    "positive_ratio": 0.5697592067988668,
+    "predicted_positive_ratio": 0.40793201133144474,
+    "threshold": 0.5,
+    "accuracy": 0.4946883852691218,
+    "precision": 0.5789930555555556,
+    "recall": 0.41454319453076444,
+    "f1": 0.48315827598696126,
+    "roc_auc": 0.5132669372638988
+  },
+  "validation_metrics": {
+    "row_count": 10927.0,
+    "positive_ratio": 0.5428754461425825,
+    "predicted_positive_ratio": 1.0,
+    "threshold": 0.37,
+    "accuracy": 0.5428754461425825,
+    "precision": 0.5428754461425825,
+    "recall": 1.0,
+    "f1": 0.7037190817960733,
+    "roc_auc": 0.5231922245914153
+  },
+  "test_metrics": {
+    "row_count": 2824.0,
+    "positive_ratio": 0.5697592067988668,
+    "predicted_positive_ratio": 0.9936260623229461,
+    "threshold": 0.37,
+    "accuracy": 0.5733002832861189,
+    "precision": 0.5719885958660014,
+    "recall": 0.997513983840895,
+    "f1": 0.7270668176670442,
+    "roc_auc": 0.5132669372638988
+  },
+  "test_baselines": {
+    "always_positive": {
+      "row_count": 2824.0,
+      "positive_ratio": 0.5697592067988668,
+      "predicted_positive_ratio": 1.0,
+      "accuracy": 0.5697592067988668,
+      "precision": 0.5697592067988668,
+      "recall": 1.0,
+      "f1": 0.7259192420482743
+    },
+    "always_negative": {
+      "row_count": 2824.0,
+      "positive_ratio": 0.5697592067988668,
+      "predicted_positive_ratio": 0.0,
+      "accuracy": 0.4302407932011331,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  },
+  "test_lift_vs_always_positive": {
+    "accuracy_lift": 0.003541076487252104,
+    "precision_lift": 0.002229389067134546,
+    "recall_lift": -0.0024860161591050423,
+    "f1_lift": 0.0011475756187698805
+  },
+  "latest_prediction": {
+    "as_of": "2026-09-03",
+    "symbol": "XOM",
+    "horizon_trading_days": 5,
+    "positive_probability": 0.5069186091423035,
+    "predicted_positive": true,
+    "threshold": 0.37
+  },
+  "training_summary": {
+    "epochs": 3,
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_loss": 0.675270250221578,
+        "validation_f1": 0.6228973693960727,
+        "validation_roc_auc": 0.5242917226059505
+      },
+      {
+        "epoch": 2.0,
+        "train_loss": 0.6720680927358023,
+        "validation_f1": 0.6129889859475883,
+        "validation_roc_auc": 0.5247289096243917
+      },
+      {
+        "epoch": 3.0,
+        "train_loss": 0.6716098557158214,
+        "validation_f1": 0.5704155672823219,
+        "validation_roc_auc": 0.5231922245914153
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+symbol,display_name,market,as_of_date,horizon_trading_days,positive_probability_5d,decision_threshold,predicted_positive_5d,model_name
+000660.KS,SK hynix,KR,2026-09-14,5,0.465514,0.37,True,transformer_direction_5d_daily
+000810.KS,Samsung Fire & Marine Insurance,KR,2026-09-14,5,0.45548534,0.37,True,transformer_direction_5d_daily
+005380.KS,Hyundai Motor,KR,2026-09-14,5,0.503143,0.37,True,transformer_direction_5d_daily
+005490.KS,POSCO Holdings,KR,2026-09-14,5,0.4694519,0.37,True,transformer_direction_5d_daily
+005930.KS,Samsung Electronics,KR,2026-09-14,5,0.47888252,0.37,True,transformer_direction_5d_daily
+015760.KS,Korea Electric Power,KR,2026-09-14,5,0.4909945,0.37,True,transformer_direction_5d_daily
+022100.KS,POSCO DX,KR,2026-09-14,5,0.47582003,0.37,True,transformer_direction_5d_daily
+030200.KS,KT,KR,2026-09-14,5,0.50001246,0.37,True,transformer_direction_5d_daily
+034730.KS,SK Inc.,KR,2026-09-14,5,0.46906635,0.37,True,transformer_direction_5d_daily
+055550.KS,Shinhan Financial Group,KR,2026-09-14,5,0.48573667,0.37,True,transformer_direction_5d_daily
+066570.KS,LG Electronics,KR,2026-09-14,5,0.47952944,0.37,True,transformer_direction_5d_daily
+105560.KS,KB Financial Group,KR,2026-09-14,5,0.47948426,0.37,True,transformer_direction_5d_daily
+AAPL,Apple,US,2026-09-14,5,0.5050629,0.37,True,transformer_direction_5d_daily
+CAT,Caterpillar,US,2026-09-14,5,0.5134413,0.37,True,transformer_direction_5d_daily
+IBM,International Business Machines,US,2026-09-14,5,0.4815586,0.37,True,transformer_direction_5d_daily
+JPM,JPMorgan Chase,US,2026-09-14,5,0.5473149,0.37,True,transformer_direction_5d_daily
+KO,Coca-Cola,US,2026-09-14,5,0.5194,0.37,True,transformer_direction_5d_daily
+MSFT,Microsoft,US,2026-09-14,5,0.49796423,0.37,True,transformer_direction_5d_daily
+MU,Micron Technology,US,2026-09-14,5,0.5149605,0.37,True,transformer_direction_5d_daily
+PG,Procter & Gamble,US,2026-09-14,5,0.50872856,0.37,True,transformer_direction_5d_daily
+QQQ,Invesco QQQ Trust,US,2026-09-14,5,0.5131841,0.37,True,transformer_direction_5d_daily
+SNDK,SanDisk,US,2026-09-14,5,0.4941539,0.37,True,transformer_direction_5d_daily
+SOXL,Direxion Daily Semiconductor Bull 3X ETF,US,2026-09-14,5,0.476519,0.37,True,transformer_direction_5d_daily
+SPY,SPDR S&P 500 ETF Trust,US,2026-09-14,5,0.5268924,0.37,True,transformer_direction_5d_daily
+WDC,Western Digital,US,2026-09-14,5,0.49333337,0.37,True,transformer_direction_5d_daily
+XOM,Exxon Mobil,US,2026-09-14,5,0.5021268,0.37,True,transformer_direction_5d_daily

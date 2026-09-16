@@ -35,6 +35,7 @@ def make_service(tmp_path) -> DashboardService:
             "return_1d": close.pct_change(),
             "moving_average_5": close.rolling(5).mean(),
             "moving_average_20": close.rolling(20).mean(),
+            "volatility_20": close.pct_change().rolling(20).std(),
         }
     )
     storage.write_dataframe_csv(features, relative_market_features_path(TEST_ASSET.symbol))
@@ -58,6 +59,32 @@ def make_service(tmp_path) -> DashboardService:
     return DashboardService(storage=storage, assets=[TEST_ASSET], cache_seconds=0)
 
 
+def write_prediction_report(service: DashboardService, storage: LocalObjectStorage, as_of: str) -> None:
+    summary = {
+        "version": "20260915T000000Z",
+        "generated_at": "2026-09-15T00:00:00+00:00",
+        "decision_threshold": 0.37,
+        "validation_metrics": {"f1": 0.72, "roc_auc": 0.51},
+    }
+    predictions = pd.DataFrame(
+        [
+            {
+                "symbol": "TEST",
+                "display_name": "Test Asset",
+                "market": "KR",
+                "as_of_date": as_of,
+                "horizon_trading_days": 5,
+                "positive_probability_5d": 0.64,
+                "decision_threshold": 0.37,
+                "predicted_positive_5d": True,
+                "model_name": "transformer_direction_5d_daily",
+            }
+        ]
+    )
+    storage.write_text(json.dumps(summary), service.prediction_report_path())
+    storage.write_dataframe_csv(predictions, service.prediction_csv_path())
+
+
 def test_dashboard_uses_real_storage_values_and_does_not_invent_predictions(tmp_path) -> None:
     dashboard = make_service(tmp_path).dashboard()
 
@@ -73,6 +100,36 @@ def test_dashboard_uses_real_storage_values_and_does_not_invent_predictions(tmp_
     assert dashboard.pipelineRuns[0].status == "unavailable"
     assert dashboard.pipelineRuns[0].lastRun is None
     assert dashboard.pipelineRuns[0].rows == 0
+
+
+def test_dashboard_uses_saved_direction_predictions(tmp_path) -> None:
+    service = make_service(tmp_path)
+    storage = service.storage
+    assert isinstance(storage, LocalObjectStorage)
+    write_prediction_report(service, storage, "2026-02-24")
+
+    dashboard = service.dashboard()
+    prediction = dashboard.predictions[0]
+
+    assert dashboard.dataChecks[-1].status == "pass"
+    assert prediction.status == "ready"
+    assert prediction.predictedDirection == "up"
+    assert prediction.upProbability == 0.64
+    assert prediction.modelVersion == "20260915T000000Z"
+    assert prediction.metricSummary == "validation F1 0.7200, ROC-AUC 0.5100"
+    assert len(prediction.forecastPoints) == 5
+    assert prediction.forecastPoints[-1].predictedClose > dashboard.assets[0].latestClose
+
+
+def test_dashboard_marks_prediction_stale_when_as_of_is_not_latest_price(tmp_path) -> None:
+    service = make_service(tmp_path)
+    storage = service.storage
+    assert isinstance(storage, LocalObjectStorage)
+    write_prediction_report(service, storage, "2026-02-23")
+
+    prediction = service.dashboard().predictions[0]
+
+    assert prediction.status == "stale"
 
 
 def test_prices_filters_range_and_preserves_moving_averages(tmp_path) -> None:

@@ -6,3 +6,9 @@ RUN useradd --uid 1000 --gid 0 --home-dir /home/dnhs01 --create-home --shell /bi
 USER airflow
 COPY requirements.txt /tmp/chartmaster-requirements.txt
 RUN pip install --no-cache-dir -r /tmp/chartmaster-requirements.txt
+RUN pip uninstall --yes \
+    apache-airflow-providers-google \
+    apache-airflow-providers-snowflake \
+    snowflake-connector-python \
+    snowflake-snowpark-python \
+    snowflake-sqlalchemy

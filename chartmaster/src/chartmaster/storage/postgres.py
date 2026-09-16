@@ -65,6 +65,21 @@ CREATE TABLE IF NOT EXISTS model_metrics (
     metric_name TEXT NOT NULL,
     metric_value DOUBLE PRECISION NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS data_quality_issues (
+    id BIGSERIAL PRIMARY KEY,
+    pipeline_run_id BIGINT REFERENCES pipeline_runs(id),
+    symbol TEXT NOT NULL,
+    observation_date DATE NOT NULL,
+    provider TEXT NOT NULL,
+    issue_code TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    status TEXT NOT NULL,
+    resolution TEXT,
+    detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMPTZ,
+    UNIQUE (symbol, observation_date, provider, issue_code)
+);
 """
 
 
@@ -224,10 +239,60 @@ class PostgresMetadataStore:
     ) -> None:
         rows = [(model_version_id, metric_group, name, value) for name, value in metrics.items()]
         with self.connect() as connection:
-            connection.executemany(
-                """
-                INSERT INTO model_metrics (model_version_id, metric_group, metric_name, metric_value)
-                VALUES (%s, %s, %s, %s)
-                """,
-                rows,
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO model_metrics (model_version_id, metric_group, metric_name, metric_value)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    rows,
+                )
+
+    def record_quality_issues(
+        self,
+        pipeline_run_id: int,
+        issues: list[tuple[str, date, str, str, str, str, str | None]],
+    ) -> None:
+        """Upsert row-level quality issues and their current resolution state."""
+        if not issues:
+            return
+        rows = [
+            (
+                pipeline_run_id,
+                symbol,
+                observation_date,
+                provider,
+                issue_code,
+                severity,
+                status,
+                resolution,
+                datetime.now(timezone.utc) if status == "resolved" else None,
             )
+            for symbol, observation_date, provider, issue_code, severity, status, resolution in issues
+        ]
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO data_quality_issues (
+                        pipeline_run_id,
+                        symbol,
+                        observation_date,
+                        provider,
+                        issue_code,
+                        severity,
+                        status,
+                        resolution,
+                        resolved_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (symbol, observation_date, provider, issue_code) DO UPDATE SET
+                        pipeline_run_id = EXCLUDED.pipeline_run_id,
+                        severity = EXCLUDED.severity,
+                        status = EXCLUDED.status,
+                        resolution = EXCLUDED.resolution,
+                        detected_at = now(),
+                        resolved_at = EXCLUDED.resolved_at
+                    """,
+                    rows,
+                )

@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -18,6 +18,7 @@ import pandas as pd
 from chartmaster.config import Asset, get_postgres_dsn, load_assets
 from chartmaster.data.market_provider import MarketDataRequest, YFinanceMarketDataProvider
 from chartmaster.features.market_features import add_positive_5d_target, build_basic_market_features
+from chartmaster.quality.market_calendar import expected_market_sessions
 from chartmaster.storage.local import (
     ObjectStorage,
     get_object_storage,
@@ -34,6 +35,8 @@ class EtlResult:
     symbol: str
     raw_uri: str
     feature_uri: str
+    fetch_start: date
+    fetch_end: date
     fetched_rows: int
     raw_rows: int
     feature_rows: int
@@ -96,6 +99,48 @@ def merge_market_data(existing: pd.DataFrame, fetched: pd.DataFrame) -> pd.DataF
     return normalize_market_dataframe(merged)
 
 
+def resolve_missing_block_start(
+    existing: pd.DataFrame,
+    requested_start: date,
+    end: date,
+    market: str,
+    block_size: int = 5,
+    max_blocks: int = 24,
+) -> date:
+    """Expand the fetch start by 5-session blocks while recent stored data is incomplete."""
+    if existing.empty or block_size <= 0 or max_blocks <= 0:
+        return requested_start
+
+    as_of = end - timedelta(days=1)
+    if as_of < requested_start:
+        return requested_start
+
+    search_start = requested_start - timedelta(days=block_size * max_blocks * 3)
+    sessions = sorted(expected_market_sessions(market, search_start, as_of))
+    if not sessions:
+        return requested_start
+
+    existing_dates = set(pd.to_datetime(existing["date"]).dt.date)
+    resolved_start = requested_start
+    cursor = len(sessions)
+
+    for _ in range(max_blocks):
+        block_start_index = max(0, cursor - block_size)
+        block = sessions[block_start_index:cursor]
+        if not block:
+            break
+
+        if all(session in existing_dates for session in block):
+            break
+
+        resolved_start = min(resolved_start, block[0])
+        cursor = block_start_index
+        if cursor == 0:
+            break
+
+    return resolved_start
+
+
 def get_metadata_store() -> PostgresMetadataStore | None:
     """Return metadata store when PostgreSQL is configured."""
     if not get_postgres_dsn():
@@ -115,14 +160,28 @@ def run_asset_etl(
     metadata_store: PostgresMetadataStore | None,
     pipeline_run_id: int | None,
     merge_existing: bool,
+    missing_block_size: int,
+    max_missing_blocks: int,
 ) -> EtlResult:
     """Collect and process one asset."""
     provider = YFinanceMarketDataProvider()
-    request = MarketDataRequest(symbol=asset.symbol, start=start, end=end)
-    fetched = provider.fetch_ohlcv(request)
-
     raw_relative_path = relative_market_raw_path("yfinance", asset.symbol)
     existing = read_existing_market_data(storage, raw_relative_path) if merge_existing else pd.DataFrame(columns=MARKET_COLUMNS)
+
+    fetch_start = (
+        resolve_missing_block_start(
+            existing,
+            requested_start=start,
+            end=end,
+            market=asset.market,
+            block_size=missing_block_size,
+            max_blocks=max_missing_blocks,
+        )
+        if merge_existing
+        else start
+    )
+    request = MarketDataRequest(symbol=asset.symbol, start=fetch_start, end=end)
+    fetched = provider.fetch_ohlcv(request)
     raw = merge_market_data(existing, fetched) if merge_existing else normalize_market_dataframe(fetched)
 
     if raw.empty:
@@ -161,6 +220,8 @@ def run_asset_etl(
         symbol=asset.symbol,
         raw_uri=raw_uri,
         feature_uri=feature_uri,
+        fetch_start=fetch_start,
+        fetch_end=end,
         fetched_rows=len(fetched),
         raw_rows=len(raw),
         feature_rows=len(features),
@@ -208,6 +269,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Replace stored CSVs instead of merging fetched rows into existing history.",
     )
+    parser.add_argument(
+        "--missing-block-size",
+        type=int,
+        default=0,
+        help="When merging, expand the fetch start by this many market sessions while a recent block is incomplete.",
+    )
+    parser.add_argument(
+        "--max-missing-blocks",
+        type=int,
+        default=24,
+        help="Maximum number of missing-session blocks to inspect when --missing-block-size is enabled.",
+    )
     return parser.parse_args()
 
 
@@ -246,10 +319,13 @@ def main() -> None:
                     metadata_store,
                     pipeline_run_id,
                     merge_existing=not args.replace_existing,
+                    missing_block_size=args.missing_block_size,
+                    max_missing_blocks=args.max_missing_blocks,
                 )
                 results.append(result)
                 print(
-                    f"{result.symbol}: fetched_rows={result.fetched_rows} "
+                    f"{result.symbol}: fetch_range={result.fetch_start}..{result.fetch_end} "
+                    f"fetched_rows={result.fetched_rows} "
                     f"raw_rows={result.raw_rows} raw={result.raw_uri} "
                     f"feature_rows={result.feature_rows} features={result.feature_uri}"
                 )

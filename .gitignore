@@ -10,4 +10,5 @@ chartmaster/desktop/node_modules/
 chartmaster/desktop/dist/
 chartmaster/desktop/dist-electron/
 chartmaster/desktop/release/
+chartmaster/.vite/
 .DS_Store

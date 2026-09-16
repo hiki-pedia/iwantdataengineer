@@ -1,0 +1,115 @@
+{
+  "model_name": "transformer_direction_5d_daily",
+  "version": "20260915T031546Z",
+  "generated_at": "2026-09-15T03:28:03.385618+00:00",
+  "as_of": "2026-09-15",
+  "window": "all_history",
+  "asset_count": 29,
+  "market": null,
+  "prediction_count": 26,
+  "latest_prediction_count": 26,
+  "latest_markets": [
+    "KR",
+    "US"
+  ],
+  "feature_columns": [
+    "return_1d",
+    "return_5d",
+    "return_20d",
+    "return_60d",
+    "volume_change_1d",
+    "volume_ratio_20",
+    "moving_average_5",
+    "moving_average_20",
+    "moving_average_60",
+    "moving_average_120",
+    "price_to_ma20",
+    "price_to_ma60",
+    "volatility_5",
+    "volatility_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_histogram",
+    "bollinger_percent_b_20",
+    "bollinger_bandwidth_20",
+    "atr_14",
+    "momentum_10",
+    "momentum_20",
+    "breakout_high_20",
+    "breakdown_low_20",
+    "breakout_high_60",
+    "breakdown_low_60"
+  ],
+  "target_column": "target_positive_5d_return",
+  "horizon_trading_days": 5,
+  "sequence_length": 60,
+  "epochs": 3,
+  "decision_threshold": 0.37,
+  "threshold_selection_metric": "validation_f1",
+  "validation_metrics": {
+    "row_count": 10927.0,
+    "positive_ratio": 0.5428754461425825,
+    "predicted_positive_ratio": 1.0,
+    "threshold": 0.37,
+    "accuracy": 0.5428754461425825,
+    "precision": 0.5428754461425825,
+    "recall": 1.0,
+    "f1": 0.7037190817960733,
+    "roc_auc": 0.5231922245914153
+  },
+  "labeled_row_count": 227773,
+  "final_train_sequence_count": 226239,
+  "threshold_train_sequence_count": 209453,
+  "threshold_validation_sequence_count": 10927,
+  "model_uri": "ssh://dnhs02@192.168.219.102/home/dnhs02/iwantdataengineer/chartmaster/models/transformer_direction_5d_daily/version=20260915T031546Z/model_state.pkl",
+  "scaler_uri": "ssh://dnhs02@192.168.219.102/home/dnhs02/iwantdataengineer/chartmaster/models/transformer_direction_5d_daily/version=20260915T031546Z/scaler.pkl",
+  "predictions_uri": "ssh://dnhs02@192.168.219.102/home/dnhs02/iwantdataengineer/chartmaster/reports/predictions/direction_5d/latest.csv",
+  "history_predictions_uri": "ssh://dnhs02@192.168.219.102/home/dnhs02/iwantdataengineer/chartmaster/reports/predictions/direction_5d/history/20260915T031546Z.csv",
+  "threshold_training_summary": {
+    "epochs": 3,
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_loss": 0.675270250221578,
+        "validation_f1": 0.6228973693960727,
+        "validation_roc_auc": 0.5242917226059505
+      },
+      {
+        "epoch": 2.0,
+        "train_loss": 0.6720680927358023,
+        "validation_f1": 0.6129889859475883,
+        "validation_roc_auc": 0.5247289096243917
+      },
+      {
+        "epoch": 3.0,
+        "train_loss": 0.6716098557158214,
+        "validation_f1": 0.5704155672823219,
+        "validation_roc_auc": 0.5231922245914153
+      }
+    ]
+  },
+  "final_training_summary": {
+    "epochs": 3,
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_loss": 0.671419858797643,
+        "validation_f1": 0.642560090223444,
+        "validation_roc_auc": 0.5261644314577558
+      },
+      {
+        "epoch": 2.0,
+        "train_loss": 0.6684444507592404,
+        "validation_f1": 0.6347045191193511,
+        "validation_roc_auc": 0.5285989968390508
+      },
+      {
+        "epoch": 3.0,
+        "train_loss": 0.6679216812099267,
+        "validation_f1": 0.5674815807099799,
+        "validation_roc_auc": 0.5294965228208653
+      }
+    ]
+  }
+}
