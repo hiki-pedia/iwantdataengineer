@@ -1,0 +1,58 @@
+name: ChartMaster 검사
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python 테스트
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: chartmaster/src
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: chartmaster/requirements.txt
+      - name: 의존성 설치
+        run: python -m pip install -r chartmaster/requirements.txt
+      - name: 기존 테스트 실행
+        run: python -m pytest chartmaster/tests -q
+
+  desktop:
+    name: 데스크톱 빌드
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: chartmaster/desktop
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: chartmaster/desktop/.nvmrc
+          cache: npm
+          cache-dependency-path: chartmaster/desktop/package-lock.json
+      - name: 잠금 파일 기준으로 의존성 설치
+        run: npm ci
+      - name: 타입 검사와 화면 빌드
+        run: npm run build
