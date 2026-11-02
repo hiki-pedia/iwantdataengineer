@@ -42,6 +42,7 @@ Phase 5: 완료
 Phase 6: 완료
   운영 정상 상태 기준, 파일 저장소 백업, PostgreSQL dump/restore 검증 완료
   FastAPI/Airflow 재시작, 품질 실패, Server 2 SSH 실패 시뮬레이션 완료
+  매주 일요일 파일·모델·PostgreSQL 자동 백업과 무결성 검증 DAG 운영
   PostgreSQL 중단 실험은 실제 metadata 기록 영향이 있어 후속 보류
 ```
 
@@ -220,6 +221,8 @@ Phase 6: 완료
 - 운영 리포트를 덮어쓰지 않는 품질 실패 실험을 완료했다.
 - 운영 설정을 바꾸지 않는 Server 2 SSH 실패 시뮬레이션을 완료했다.
 - PostgreSQL 중단/복구 실험은 후속 운영 고도화 항목으로 보류했다.
+- `weekly_chartmaster_backup` DAG로 매주 일요일 오전 3시 파일 저장소와 PostgreSQL metadata를 자동 백업한다.
+- 자동 백업은 tar, gzip, SHA256 검증을 통과해야 성공하며 기존 백업은 자동 삭제하지 않는다.
 
 학습 포인트:
 

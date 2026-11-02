@@ -23,6 +23,43 @@ PostgreSQL metadata backup
 
 Airflow metadata DB는 Airflow 내부 실행 상태를 위한 별도 DB다. ChartMaster 데이터셋 metadata DB와 목적이 다르므로 백업 정책도 분리한다.
 
+## 자동 백업 정책
+
+`weekly_chartmaster_backup` DAG가 매주 일요일 오전 3시(Asia/Seoul)에 서버2 백업을 실행한다.
+
+- `catchup=False`: 서버가 예정 시각에 꺼져 있었다면 다음 스케줄러 기동 시 최신 주기 한 번만 실행한다.
+- 파일 대상: `raw`, `curated`, `processed`, `models`, `reports`
+- DB 대상: 서버2 `chartmaster-postgres` 컨테이너의 `chartmaster` 데이터베이스
+- 검증: tar 목록 검사, gzip 무결성 검사, 파일별 SHA256 검사
+- 재시도: 30분 간격 2회
+- 기존 백업: 자동 삭제하지 않는다. 용량을 확인한 후 별도 보존 정책을 결정한다.
+
+수동 실행:
+
+```bash
+cd /home/dnhs01/iwantdataengineer
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=chartmaster/src \
+  chartmaster/.venv/bin/python -m chartmaster.pipelines.local_server2_backup
+```
+
+Airflow에서 실행 결과를 확인할 때는 `weekly_chartmaster_backup`의 `backup_and_verify_server2` 태스크 로그에서 백업 경로와 크기를 확인한다.
+
+### 자동 백업 1차 운영 검증
+
+2026-11-02에 수동 실행과 Airflow 스케줄 실행을 각각 검증했다.
+
+```text
+DAG: weekly_chartmaster_backup
+Task: backup_and_verify_server2
+State: success
+File backup: chartmaster_files_20261102_155734.tar.gz
+File size: 191,475,818 bytes
+DB backup: chartmaster_metadata_20261102_155734_server2.sql.gz
+DB size: 165,684 bytes
+Integrity: tar OK, gzip OK, SHA256 OK
+Next run: 2026-11-08 03:00 KST
+```
+
 ## 백업 제외 대상
 
 다음 항목은 재생성 가능하거나 프로젝트 산출물이 아니므로 정기 백업 대상에서 제외한다.
@@ -48,7 +85,7 @@ cd /home/dnhs02/iwantdataengineer/chartmaster
 mkdir -p backups/files backups/manifests
 
 tar -czf backups/files/chartmaster_files_${ts}.tar.gz \
-  raw curated processed reports
+  raw curated processed models reports
 
 sha256sum backups/files/chartmaster_files_${ts}.tar.gz \
   > backups/manifests/chartmaster_files_${ts}.sha256
