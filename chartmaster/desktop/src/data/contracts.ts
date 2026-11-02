@@ -55,6 +55,9 @@ export type PipelineRun = {
   lastRun: string | null;
   nextRun: string | null;
   rows: number;
+  successCount: number;
+  failedCount: number;
+  recentFailures: string[];
 };
 
 export type MarketEvent = {
@@ -76,6 +79,8 @@ export type Prediction = {
   status: PredictionStatus;
   predictedDirection: "up" | "down" | null;
   upProbability: number | null;
+  decisionThreshold: number | null;
+  sequenceLength: number | null;
   modelVersion: string | null;
   trainedThrough: string | null;
   dataQuality: DataStatus;

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import subprocess
 import threading
 import time
+from base64 import b64encode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import pandas as pd
 
@@ -265,13 +270,51 @@ class DashboardService:
         ]
         return sorted(issues, key=lambda issue: (issue.severity != "error", issue.market, issue.symbol, issue.code))
 
-    @staticmethod
-    def _pipeline_status(_assets: list[AssetResponse]) -> list[PipelineRunResponse]:
+    def _pipeline_status(self, assets: list[AssetResponse]) -> list[PipelineRunResponse]:
         result = []
         for name in ("daily_kr_market_data_etl", "daily_us_market_data_etl"):
-            result.append(PipelineRunResponse(name=name, status="unavailable", lastRun=None, nextRun=None, rows=0))
+            market = "KR" if "_kr_" in name else "US"
+            rows = sum(asset.rowCount for asset in assets if asset.market == market)
+            try:
+                runs = self._airflow_dag_runs(name)
+            except (HTTPError, URLError, TimeoutError, ValueError, OSError):
+                result.append(PipelineRunResponse(name=name, status="unavailable", lastRun=None, nextRun=None, rows=rows))
+                continue
+
+            latest = runs[0] if runs else {}
+            state = str(latest.get("state", "unavailable"))
+            status = state if state in {"success", "running", "failed", "queued"} else "unavailable"
+            failures = [str(run.get("execution_date", "")) for run in runs if run.get("state") == "failed"]
+            result.append(
+                PipelineRunResponse(
+                    name=name,
+                    status=status,
+                    lastRun=str(latest.get("end_date") or latest.get("start_date") or latest.get("execution_date") or "") or None,
+                    nextRun=None,
+                    rows=rows,
+                    successCount=sum(run.get("state") == "success" for run in runs),
+                    failedCount=len(failures),
+                    recentFailures=failures[:5],
+                )
+            )
         result.append(PipelineRunResponse(name="weekly_model_training", status="planned", lastRun=None, nextRun="Phase 7", rows=0))
         return result
+
+    @staticmethod
+    def _airflow_dag_runs(dag_id: str) -> list[dict]:
+        base_url = os.environ.get("CHARTMASTER_AIRFLOW_API_URL", "").rstrip("/")
+        if not base_url:
+            raise ValueError("CHARTMASTER_AIRFLOW_API_URL is not configured")
+        query = urlencode({"limit": 100, "order_by": "-execution_date"})
+        request = Request(f"{base_url}/dags/{dag_id}/dagRuns?{query}")
+        user = os.environ.get("CHARTMASTER_AIRFLOW_USER", "chartmaster")
+        password = os.environ.get("CHARTMASTER_AIRFLOW_PASSWORD", "chartmaster")
+        token = b64encode(f"{user}:{password}".encode()).decode()
+        request.add_header("Authorization", f"Basic {token}")
+        with urlopen(request, timeout=5) as response:
+            payload = json.load(response)
+        runs = payload.get("dag_runs", [])
+        return runs if isinstance(runs, list) else []
 
     @staticmethod
     def _events(assets: list[AssetResponse]) -> list[MarketEventResponse]:
@@ -301,6 +344,8 @@ class DashboardService:
                 status="model_not_ready",
                 predictedDirection=None,
                 upProbability=None,
+                decisionThreshold=None,
+                sequenceLength=None,
                 modelVersion=None,
                 trainedThrough=None,
                 dataQuality=asset.dataStatus,
@@ -332,6 +377,8 @@ class DashboardService:
             status=status,
             predictedDirection="up" if predicted_positive else "down",
             upProbability=probability,
+            decisionThreshold=threshold,
+            sequenceLength=int(prediction_summary.get("sequence_length", 60)),
             modelVersion=str(prediction_summary.get("version") or prediction_row.get("model_name") or ""),
             trainedThrough=as_of or None,
             dataQuality=asset.dataStatus,

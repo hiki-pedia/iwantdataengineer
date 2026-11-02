@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 DataStatus = Literal["ready", "watch", "unavailable"]
@@ -60,6 +60,9 @@ class PipelineRunResponse(BaseModel):
     lastRun: str | None
     nextRun: str | None
     rows: int
+    successCount: int = 0
+    failedCount: int = 0
+    recentFailures: list[str] = Field(default_factory=list)
 
 
 class MarketEventResponse(BaseModel):
@@ -88,6 +91,8 @@ class PredictionResponse(BaseModel):
     status: Literal["model_not_ready", "ready", "stale", "failed"]
     predictedDirection: Literal["up", "down"] | None
     upProbability: float | None
+    decisionThreshold: float | None
+    sequenceLength: int | None
     modelVersion: str | None
     trainedThrough: str | None
     dataQuality: DataStatus
