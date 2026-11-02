@@ -8,7 +8,7 @@ type PredictionSignalChartProps = {
   prediction?: Prediction;
 };
 
-const WINDOW_SIZE = 40;
+const WINDOW_SIZE = 15;
 
 export function PredictionSignalChart({ asset, candles, prediction }: PredictionSignalChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,13 +22,17 @@ export function PredictionSignalChart({ asset, candles, prediction }: Prediction
     const recent = candles.slice(-WINDOW_SIZE);
     const chart = createChart(container, {
       width: container.clientWidth,
-      height: 250,
+      height: 310,
       layout: { background: { type: ColorType.Solid, color: "#090d14" }, textColor: "#7f8ba2", attributionLogo: true },
       grid: { vertLines: { color: "#17202d" }, horzLines: { color: "#17202d" } },
-      rightPriceScale: { borderColor: "#273142", minimumWidth: 58 },
+      rightPriceScale: {
+        borderColor: "#273142",
+        minimumWidth: 58,
+        scaleMargins: { top: 0.12, bottom: 0.12 }
+      },
       timeScale: {
         borderColor: "#273142",
-        rightOffset: prediction?.forecastPoints.length ? 2 : 0,
+        rightOffset: prediction?.forecastPoints.length ? 4 : 0,
         timeVisible: false,
         fixLeftEdge: true,
         fixRightEdge: true
