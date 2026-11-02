@@ -16,6 +16,7 @@ import {
 import type { Asset, DashboardSnapshot, Prediction, QualityIssue, StockCandle } from "./data/contracts";
 import { dataProvider } from "./data/provider";
 import { FinancialChart } from "./components/FinancialChart";
+import { PredictionSignalChart } from "./components/PredictionSignalChart";
 import "./styles.css";
 
 type AppRoute = `asset:${string}` | "dashboard" | "assets" | "data-status" | "data-check" | "events" | "predictions" | "pipelines" | "reports";
@@ -65,6 +66,7 @@ function App() {
           <AssetPage
             asset={selectedAsset}
             prediction={selectedPrediction}
+            issues={snapshot.qualityIssues.filter((issue) => issue.symbol === selectedAsset.symbol)}
             sourceMode={snapshot.sourceMode}
             isExpanded={isExpanded}
             setIsExpanded={setIsExpanded}
@@ -218,12 +220,14 @@ function AssetsPage({ assets, setRoute }: { assets: Asset[]; setRoute: (route: A
 function AssetPage({
   asset,
   prediction,
+  issues,
   sourceMode,
   isExpanded,
   setIsExpanded
 }: {
   asset: Asset;
   prediction?: Prediction;
+  issues: QualityIssue[];
   sourceMode: DashboardSnapshot["sourceMode"];
   isExpanded: boolean;
   setIsExpanded: (value: boolean) => void;
@@ -296,13 +300,22 @@ function AssetPage({
           <InfoRow label="행 수" value={asset.rowCount.toLocaleString()} />
           <InfoRow label="최신 일자" value={asset.endDate} />
           <InfoRow label="품질" value={asset.warningCount ? `경고 ${asset.warningCount}` : "통과"} tone={asset.warningCount ? "watch" : "ready"} />
+          {issues.map((issue) => (
+            <div className="asset-quality-alert" key={`${issue.symbol}-${issue.code}`}>
+              <div><AlertTriangle size={15} /><strong>{qualityIssueTitle(issue.code)}</strong></div>
+              <p>{qualityIssueDescription(issue)}</p>
+              <span>{issue.count.toLocaleString()}개 행 · {issue.checkedAt}</span>
+            </div>
+          ))}
           <InfoRow label="표시 소스" value={sourceMode === "mock" ? "스냅샷 / 데모" : "Live API"} />
           <InfoRow label="등급" value={tierText(asset.tier)} />
           <h2>예측</h2>
           <InfoRow label="예측 기간" value={`${prediction?.horizonTradingDays ?? 5} 거래일`} />
           <InfoRow label="상태" value={predictionStatusText(prediction?.status)} tone={prediction?.status === "ready" ? "ready" : "watch"} />
-          <InfoRow label="상승 확률" value={formatProbability(prediction?.upProbability)} />
+          <InfoRow label="상승 점수" value={formatProbability(prediction?.upProbability)} />
+          <InfoRow label="판정 기준" value={formatProbability(prediction?.decisionThreshold)} />
           <InfoRow label="모델" value={prediction?.modelVersion ?? "-"} />
+          <PredictionSignalChart asset={asset} candles={candles} prediction={prediction} />
         </aside>
       </section>
 
@@ -489,6 +502,14 @@ function PipelinesPage({ assets, runs, setRoute }: { assets: Asset[]; runs: Dash
             <em className={run.status}>{statusText(run.status)}</em>
             <InfoRow label="다음 실행" value={run.nextRun ?? "-"} />
             <InfoRow label="행 수" value={run.rows.toLocaleString()} />
+            <InfoRow label="성공 이력" value={`${run.successCount}건`} />
+            <InfoRow label="실패 이력" value={`${run.failedCount}건`} tone={run.failedCount ? "watch" : "ready"} />
+            {run.recentFailures.length > 0 && (
+              <div className="pipeline-failures">
+                <strong>최근 실패</strong>
+                {run.recentFailures.map((date) => <time key={date}>{formatDateTime(date)}</time>)}
+              </div>
+            )}
           </article>
         ))}
       </section>

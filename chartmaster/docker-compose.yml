@@ -10,6 +10,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
     AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Seoul
     AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: Asia/Seoul
+    AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
     PYTHONPATH: /opt/airflow/chartmaster/src
   volumes:
     - .:/opt/airflow/chartmaster
@@ -29,6 +30,9 @@ services:
       dockerfile: api/Dockerfile
     environment:
       PYTHONPATH: /opt/chartmaster/src
+      CHARTMASTER_AIRFLOW_API_URL: http://airflow-webserver:8080/api/v1
+      CHARTMASTER_AIRFLOW_USER: "${AIRFLOW_ADMIN_USER:-chartmaster}"
+      CHARTMASTER_AIRFLOW_PASSWORD: "${AIRFLOW_ADMIN_PASSWORD:-chartmaster}"
     volumes:
       - .:/opt/chartmaster:ro
       - ../.env:/opt/.env:ro

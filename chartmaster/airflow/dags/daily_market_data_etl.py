@@ -29,14 +29,17 @@ def market_etl_command(market: str, market_timezone: str) -> str:
     return f"""
     set -euo pipefail
     cd {PROJECT_DIR}
-    START_DATE="$(python - <<'PY'
+    MARKET_DATE="{{{{ data_interval_end.in_timezone('{market_timezone}').to_date_string() }}}}"
+    START_DATE="$(python - "$MARKET_DATE" <<'PY'
 import pendulum
-print(pendulum.now("{market_timezone}").subtract(days={LOOKBACK_DAYS}).to_date_string())
+import sys
+print(pendulum.parse(sys.argv[1]).subtract(days={LOOKBACK_DAYS}).to_date_string())
 PY
 )"
-    END_DATE="$(python - <<'PY'
+    END_DATE="$(python - "$MARKET_DATE" <<'PY'
 import pendulum
-print(pendulum.now("{market_timezone}").add(days=1).to_date_string())
+import sys
+print(pendulum.parse(sys.argv[1]).add(days=1).to_date_string())
 PY
 )"
     PYTHONDONTWRITEBYTECODE=1 PYTHONPATH={PROJECT_DIR}/src \
@@ -54,11 +57,7 @@ def market_quality_command(market: str, market_timezone: str) -> str:
     return f"""
     set -euo pipefail
     cd {PROJECT_DIR}
-    AS_OF="$(python - <<'PY'
-import pendulum
-print(pendulum.now("{market_timezone}").to_date_string())
-PY
-)"
+    AS_OF="{{{{ data_interval_end.in_timezone('{market_timezone}').to_date_string() }}}}"
     PYTHONDONTWRITEBYTECODE=1 PYTHONPATH={PROJECT_DIR}/src \
       python -m chartmaster.pipelines.local_market_data_quality \
         --market {market} \
@@ -81,11 +80,7 @@ def market_prediction_command(market: str, market_timezone: str) -> str:
     return f"""
     set -euo pipefail
     cd {PROJECT_DIR}
-    AS_OF="$(python - <<'PY'
-import pendulum
-print(pendulum.now("{market_timezone}").to_date_string())
-PY
-)"
+    AS_OF="{{{{ data_interval_end.in_timezone('{market_timezone}').to_date_string() }}}}"
     PYTHONDONTWRITEBYTECODE=1 PYTHONPATH={PROJECT_DIR}/src \
       python -m chartmaster.pipelines.local_transformer_direction_prediction \
         --market {market} \
@@ -104,7 +99,7 @@ with DAG(
     default_args=DEFAULT_ARGS,
     schedule="10 16 * * 1-5",
     start_date=pendulum.datetime(2026, 7, 27, tz="Asia/Seoul"),
-    catchup=True,
+    catchup=False,
     max_active_runs=1,
     tags=["chartmaster", "market-data", "kr"],
 ) as kr_market_dag:
@@ -134,7 +129,7 @@ with DAG(
     default_args=DEFAULT_ARGS,
     schedule="30 17 * * 1-5",
     start_date=pendulum.datetime(2026, 7, 27, tz="America/New_York"),
-    catchup=True,
+    catchup=False,
     max_active_runs=1,
     tags=["chartmaster", "market-data", "us"],
 ) as us_market_dag:

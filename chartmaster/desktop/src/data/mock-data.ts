@@ -79,6 +79,8 @@ const predictions: Prediction[] = mockAssets.map((asset) => ({
   status: "model_not_ready",
   predictedDirection: null,
   upProbability: null,
+  decisionThreshold: null,
+  sequenceLength: null,
   modelVersion: null,
   trainedThrough: null,
   dataQuality: asset.dataStatus,
@@ -120,9 +122,9 @@ export const mockSnapshot: DashboardSnapshot = {
   ],
   qualityIssues,
   pipelineRuns: [
-    { name: "daily_kr_market_data_etl", status: "success", lastRun: "2026-08-22 16:25", nextRun: "스케줄 실행", rows: 12 },
-    { name: "daily_us_market_data_etl", status: "success", lastRun: "2026-08-22 검증", nextRun: "스케줄 실행", rows: 17 },
-    { name: "weekly_model_training", status: "planned", lastRun: null, nextRun: "Phase 7", rows: 0 }
+    { name: "daily_kr_market_data_etl", status: "success", lastRun: "2026-08-22 16:25", nextRun: "스케줄 실행", rows: 12, successCount: 1, failedCount: 0, recentFailures: [] },
+    { name: "daily_us_market_data_etl", status: "success", lastRun: "2026-08-22 검증", nextRun: "스케줄 실행", rows: 17, successCount: 1, failedCount: 0, recentFailures: [] },
+    { name: "weekly_model_training", status: "planned", lastRun: null, nextRun: "Phase 7", rows: 0, successCount: 0, failedCount: 0, recentFailures: [] }
   ],
   events: [
     { id: "evt-000810-20260821", symbol: "000810.KS", type: "급등 후보", date: "2026-08-21", move: 0.062701, causeStatus: "not_analyzed", causeSummary: null, sourceCount: 0 },

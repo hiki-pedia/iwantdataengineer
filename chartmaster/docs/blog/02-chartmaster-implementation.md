@@ -373,7 +373,7 @@ start = market timezone 기준 data_interval_end - 10일
 end   = market timezone 기준 data_interval_end + 1일
 ```
 
-가져온 데이터는 Phase 1의 merge/dedup 로직을 통과한다. 따라서 최근 날짜를 반복 수집해도 중복 행이 증가하지 않으며, 데이터 제공자가 과거 값을 수정하거나 늦게 제공한 경우 기존 행을 최신 값으로 교체할 수 있다.
+가져온 데이터는 Phase 1의 merge/dedup 로직을 통과한다. 따라서 최근 날짜를 반복 수집해도 중복 행이 증가하지 않으며, 데이터 제공자가 과거 값을 수정하거나 늦게 제공한 경우 기존 행을 최신 값으로 교체할 수 있다. 서버 중단 복구는 날짜별 Airflow run을 모두 생성하는 방식 대신 최신 실행 한 번이 직전 5거래일을 검사하고, 누락이 있으면 다시 이전 5거래일을 확인하는 방식으로 통일했다.
 
 ```text
 Airflow catchup       = 실행되지 않은 날짜의 Run 복구

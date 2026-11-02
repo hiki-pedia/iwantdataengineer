@@ -99,7 +99,7 @@ def test_dashboard_uses_real_storage_values_and_does_not_invent_predictions(tmp_
     assert dashboard.predictions[0].forecastPoints == []
     assert dashboard.pipelineRuns[0].status == "unavailable"
     assert dashboard.pipelineRuns[0].lastRun is None
-    assert dashboard.pipelineRuns[0].rows == 0
+    assert dashboard.pipelineRuns[0].rows == 300
 
 
 def test_dashboard_uses_saved_direction_predictions(tmp_path) -> None:
