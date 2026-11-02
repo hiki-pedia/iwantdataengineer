@@ -312,7 +312,8 @@ function AssetPage({
           <h2>예측</h2>
           <InfoRow label="예측 기간" value={`${prediction?.horizonTradingDays ?? 5} 거래일`} />
           <InfoRow label="상태" value={predictionStatusText(prediction?.status)} tone={prediction?.status === "ready" ? "ready" : "watch"} />
-          <InfoRow label="상승 확률" value={formatProbability(prediction?.upProbability)} />
+          <InfoRow label="상승 점수" value={formatProbability(prediction?.upProbability)} />
+          <InfoRow label="판정 기준" value={formatProbability(prediction?.decisionThreshold)} />
           <InfoRow label="모델" value={prediction?.modelVersion ?? "-"} />
           <PredictionSignalChart asset={asset} candles={candles} prediction={prediction} />
         </aside>

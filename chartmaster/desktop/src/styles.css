@@ -648,6 +648,14 @@ h2 {
   font-weight: 900;
 }
 
+.prediction-probabilities .prediction-score {
+  color: #d96cff;
+}
+
+.prediction-probabilities .prediction-threshold {
+  color: var(--amber);
+}
+
 .prediction-mini-chart {
   width: 100%;
   min-height: 310px;

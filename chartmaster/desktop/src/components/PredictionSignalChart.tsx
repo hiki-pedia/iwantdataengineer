@@ -13,6 +13,7 @@ const WINDOW_SIZE = 15;
 export function PredictionSignalChart({ asset, candles, prediction }: PredictionSignalChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const probability = prediction?.upProbability ?? null;
+  const threshold = prediction?.decisionThreshold ?? null;
   const isReady = prediction?.status === "ready" || prediction?.status === "stale";
 
   useEffect(() => {
@@ -106,17 +107,18 @@ export function PredictionSignalChart({ asset, candles, prediction }: Prediction
           {prediction?.predictedDirection === "up" ? "상승 판정" : prediction?.predictedDirection === "down" ? "하락 판정" : "대기"}
         </em>
       </div>
-      {isReady && probability !== null ? (
+      {isReady && probability !== null && threshold !== null ? (
         <>
           <div className="prediction-probabilities">
-            <span className="up">상승 {formatPercent(probability)}</span>
-            <span className="down">하락 {formatPercent(1 - probability)}</span>
+            <span className="prediction-score">상승 점수 {formatPercent(probability)}</span>
+            <span className="prediction-threshold">판정 기준 {formatPercent(threshold)}</span>
           </div>
           <div className="prediction-mini-chart" ref={containerRef} />
           <div className="prediction-mini-legend">
             <span className="ma5-key">MA5</span><span className="ma20-key">MA20</span><span className="forecast-key">5일 방향 시나리오</span>
           </div>
-          <p>목표가격이 아닌 방향 확률의 시각화입니다.</p>
+          <p>{formatPercent(probability)} {probability >= threshold ? "≥" : "<"} {formatPercent(threshold)} · {probability >= threshold ? "상승" : "하락"} 판정</p>
+          <p>목표가격이 아닌 방향 점수의 시각화입니다.</p>
         </>
       ) : <div className="prediction-empty">예측 결과가 아직 준비되지 않았습니다.</div>}
     </section>
