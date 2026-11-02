@@ -22,7 +22,7 @@ Phase 1: 완료
   과거 OHLCV 백필, 서버2 파일 저장소, PostgreSQL metadata, 기본 피처 생성
 
 Phase 2: 운영 중
-  Airflow 기반 한국장/미국장 일봉 자동 수집, catchup, overlap merge, dedup
+  Airflow 기반 한국장/미국장 일봉 자동 수집, 5거래일 블록 누락 복구, merge, dedup
   실패/retry 강제 테스트는 별도 운영 검증 단계로 남김
 
 Phase 3: 완료
@@ -81,8 +81,8 @@ Phase 6: 완료
 - `daily_us_market_data_etl` DAG를 만든다.
 - 한국장과 미국장 장마감 시간을 분리해서 스케줄링한다.
 - 서버가 켜져 있으면 정해진 시간에 자동 수집한다.
-- 서버가 꺼져 있던 동안 놓친 실행은 Airflow catchup으로 복구한다.
-- 10일 overlap 수집과 날짜 기준 merge/dedup으로 누락과 데이터 정정을 흡수한다.
+- 서버가 꺼져 있던 기간은 최신 DAG 실행 한 번이 5거래일 단위로 과거를 확인하며 복구한다.
+- 누락이 발견되면 그 이전 5거래일을 반복 확인하고, 날짜 기준 merge/dedup으로 누락과 데이터 정정을 흡수한다.
 
 산출물:
 
@@ -97,7 +97,7 @@ Phase 6: 완료
 - Airflow DAG
 - Task 의존성
 - schedule interval
-- catchup
+- `catchup=False`와 애플리케이션 수준 누락 복구의 역할 분리
 - retry
 - Docker Compose 운영
 - Airflow metadata DB와 프로젝트 metadata DB의 차이
